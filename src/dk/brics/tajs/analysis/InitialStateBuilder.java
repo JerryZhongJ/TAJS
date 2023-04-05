@@ -755,6 +755,15 @@ public class InitialStateBuilder implements IInitialStateBuilder<State, Context,
         pv.writePropertyWithAttributes(objlabel, "prototype", Value.makeObject(prototype).setAttributes(true, true, true));
     }
 
+    /**
+     * Creates a new built-in function or constructor.
+     * @param target
+     * @param internal_proto
+     * @param name
+     * @param arity
+     * @param objlabel
+     * @param c
+     */
     private static void createPrimitiveFunctionOrConstructor(ObjectLabel target, ObjectLabel internal_proto, String name, int arity, ObjectLabel objlabel, Solver.SolverInterface c) {
         PropVarOperations pv = c.getAnalysis().getPropVarOperations();
         pv.writePropertyWithAttributes(target, name, Value.makeObject(objlabel).setAttributes(true, false, false));

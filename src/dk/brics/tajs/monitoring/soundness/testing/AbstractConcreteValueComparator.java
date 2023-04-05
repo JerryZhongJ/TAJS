@@ -49,7 +49,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * Compares abstract and concrete values, deciding if the abstract value over-approximates the concrete value.
+ * Compares abstract and concrete values, deciding if the abstract value over-approximates the concrete value. This is a part of LogEntrySoundnessTester.
  * <p>
  * TODO this class could use a thorough re-implementation (GitHub #415)
  */

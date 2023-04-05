@@ -134,7 +134,7 @@
             </doctitle>
             <bottom><![CDATA[<i> Copyright &#169; 2009-2019 Aarhus University </i>]]></bottom>
             <link href="http://docs.oracle.com/en/java/javase/11/docs/api/"/>
-            <link href="http://www.mozilla.org/rhino/apidocs/" />
+            <link href="https://javadoc.io/doc/org.mozilla/rhino" />
             <classpath refid="classpath" />
         </javadoc>
     </target>

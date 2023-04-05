@@ -1,0 +1,10 @@
+rootProject.name = 'TAJS'
+include 'jalangilogger'
+project(':jalangilogger').projectDir = file('extras/jalangilogger')
+include 'ts-spec-reader'
+project(':ts-spec-reader').projectDir = file('extras/ts-spec-reader')
+include 'inspector'
+project(':inspector').projectDir = file('extras/inspector')
+// includeBuild('extras/jalangilogger')
+// includeBuild('extras/ts-spec-reader')
+// includeBuild('extras/inspector')

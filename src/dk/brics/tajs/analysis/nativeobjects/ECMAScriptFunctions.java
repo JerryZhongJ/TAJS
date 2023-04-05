@@ -31,7 +31,7 @@ import org.apache.log4j.Logger;
 import static dk.brics.tajs.util.Collections.singleton;
 
 /**
- * Encapsulation of transfer functions for ECMAScript native functions.
+ * Encapsulation of transfer functions for ECMAScript native functions. This is a part of HostAPIs.
  */
 public class ECMAScriptFunctions {
 

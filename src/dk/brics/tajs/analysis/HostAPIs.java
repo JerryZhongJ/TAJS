@@ -50,6 +50,7 @@ public enum HostAPIs implements HostAPI {
         this.short_name = short_name;
     }
 
+    // TODO: Not referenced
     public static Value evaluate(HostObject hostobject, CallInfo call, Solver.SolverInterface c) {
         if (NativeFunctionSignatureChecker.get().shouldStopPropagation(hostobject, call, c)) {
             c.getState().setToBottom();
