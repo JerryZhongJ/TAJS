@@ -172,3 +172,7 @@ test {
                     "${result.skippedTestCount} skipped)")
     }
 }
+
+run {
+    standardInput = System.in
+}

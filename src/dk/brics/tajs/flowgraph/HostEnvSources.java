@@ -106,6 +106,7 @@ public class HostEnvSources {
         if (Options.get().isNodeJS()) {
             sourcePaths.add("nodejs/simple-bootstrap-node.js");
         }
+        // JERRY TODO: add options "c_summary" and sources
 
         return sourcePaths.stream().map(s -> {
             try {

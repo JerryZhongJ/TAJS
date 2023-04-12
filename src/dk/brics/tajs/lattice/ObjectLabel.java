@@ -69,6 +69,7 @@ public final class ObjectLabel implements DeepImmutable {
         BOOLEAN("Boolean"),
         ERROR("Error"),
         MATH("Math"),
+        // Activation objects are objects in the execution context, whose properties are the variables in the function (including formal parameters and arguments)
         ACTIVATION("activation"),
         ARGUMENTS("arguments");
 

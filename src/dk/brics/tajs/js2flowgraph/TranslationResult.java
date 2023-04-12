@@ -21,6 +21,7 @@ import dk.brics.tajs.flowgraph.syntaticinfo.SyntacticReference;
 
 /**
  * Information about the result of translating a program fragment.
+ * A translation result stores the result of an expression and the last basic block that been generated.
  */
 class TranslationResult {
 
@@ -30,7 +31,7 @@ class TranslationResult {
     private BasicBlock appendBlock;
 
     /**
-     * Holds the result reference, or null if the result if not a reference.
+     * Holds the result reference, or null if the result is not a reference.
      */
     private SyntacticReference resultReference;
 

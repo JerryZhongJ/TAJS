@@ -36,9 +36,9 @@ import dk.brics.tajs.lattice.Obj;
 import dk.brics.tajs.lattice.ObjProperties;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectLabel.Kind;
-import dk.brics.tajs.lattice.PKey;
-import dk.brics.tajs.lattice.PKey.StringPKey;
-import dk.brics.tajs.lattice.PKeys;
+import dk.brics.tajs.lattice.PropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
+import dk.brics.tajs.lattice.StringOrSymbol;
 import dk.brics.tajs.lattice.PartitionToken;
 import dk.brics.tajs.lattice.PartitionedValue;
 import dk.brics.tajs.lattice.Renamings;
@@ -196,7 +196,7 @@ public class JSObject {
                     return Value.makeNone();
                 else if (propval.isMaybeSingleStr()) {
                     String propname = propval.getStr();
-                    Value val = pv.readPropertyDirect(thisobj, StringPKey.make(propname));
+                    Value val = pv.readPropertyDirect(thisobj, StringPropertyKey.make(propname));
                     Value res = Value.makeNone();
                     if (val.isMaybeAbsent() || val.isMaybeDontEnum() || val.isNotPresent())
                         res = res.joinBool(false);
@@ -206,7 +206,7 @@ public class JSObject {
                 }
                 for (ObjectLabel ol : thisobj) {
                     Obj o = state.getObject(ol, false);
-                    for (PKey propname : o.getProperties().keySet()) {
+                    for (PropertyKey propname : o.getProperties().keySet()) {
                         if (UnknownValueResolver.getProperty(ol, propname, state, true).isMaybeNotDontEnum())
                             return Value.makeAnyBool();
                     }
@@ -339,13 +339,13 @@ public class JSObject {
         return stopPropagation[0];
     }
 
-    private static Value definePropertyFromDescriptorsObjectProperty(Value target, ObjectLabel propertyDescriptorsObject, PKeys propertyName, boolean forceWeak, Solver.SolverInterface c) {
+    private static Value definePropertyFromDescriptorsObjectProperty(Value target, ObjectLabel propertyDescriptorsObject, StringOrSymbol propertyName, boolean forceWeak, Solver.SolverInterface c) {
         c.getMonitoring().visitPropertyRead(c.getNode(), singleton(propertyDescriptorsObject), propertyName, c.getState(), true);
         Value propertyDescriptorObject = c.getAnalysis().getPropVarOperations().readPropertyValue(singleton(propertyDescriptorsObject), propertyName);
         return defineProperty(target, propertyName, propertyDescriptorObject, forceWeak, c);
     }
 
-    private static Value defineProperty(Value o, PKeys propertyName, Value propertyDescriptorObject, boolean forceWeak, Solver.SolverInterface c) {
+    private static Value defineProperty(Value o, StringOrSymbol propertyName, Value propertyDescriptorObject, boolean forceWeak, Solver.SolverInterface c) {
         if (propertyName instanceof PartitionedValue && propertyDescriptorObject instanceof PartitionedValue) {
             Optional<AbstractNode> partitionNodeOpt = Partitioning.findPartitionNode((PartitionedValue) propertyName, (PartitionedValue) propertyDescriptorObject);
             if (partitionNodeOpt.isPresent()) {
@@ -390,9 +390,9 @@ public class JSObject {
         if (!properties.getMaybe().isEmpty()) {
             if ((properties.getMaybe().size() < 2 || c.getAnalysis().getUnsoundness().mayUseSortedObjectKeys(call.getSourceNode())) && properties.isDefinite()) {
                 // we know the *order* of property names
-                List<PKey> sortedNames = newList(properties.getDefinitely());
-                sortedNames.sort(new PKey.Comparator());
-                JSArray.setEntries(array, sortedNames.stream().map(PKey::toValue).collect(Collectors.toList()), c);
+                List<PropertyKey> sortedNames = newList(properties.getDefinitely());
+                sortedNames.sort(new PropertyKey.Comparator());
+                JSArray.setEntries(array, sortedNames.stream().map(PropertyKey::toValue).collect(Collectors.toList()), c);
             } else {
                 // Order of properties is the same as for-in: unspecified.
                 if (!Options.get().isNoStringSets() && !properties.isDefaultNumericMaybePresent() && !properties.isDefaultOtherMaybePresent()) {
@@ -406,7 +406,7 @@ public class JSObject {
                     }
                 } else if (nativeobject == ECMAScriptObjects.OBJECT_KEYS) {
                     // Special case: we can ignore all non-enumerable strings (see SplittingUtil!)
-                    Value propertyNames = Value.join(properties.getMaybe().stream().map(PKey::toValue).collect(Collectors.toList()));
+                    Value propertyNames = Value.join(properties.getMaybe().stream().map(PropertyKey::toValue).collect(Collectors.toList()));
                     if (properties.isDefinite() && properties.getDefinitely().size() <= 1) {
                         // we know the *number* of property names
                         List<Value> joinedPropertyNamesArray = properties.getDefinitely().stream().map(x -> propertyNames).collect(Collectors.toList());
@@ -417,7 +417,7 @@ public class JSObject {
                     }
                 } else {
                     // we know nothing
-                    JSArray.setUnknownEntries(array, Value.join(properties.getMaybe().stream().map(PKey::toValue).collect(Collectors.toList())), c);
+                    JSArray.setUnknownEntries(array, Value.join(properties.getMaybe().stream().map(PropertyKey::toValue).collect(Collectors.toList())), c);
                 }
             }
         }
@@ -451,7 +451,7 @@ public class JSObject {
         if (!properties.getMaybe().isEmpty()) {
             // Order of properties is the same as for-in: unspecified
             Value propertyValues = Value.makeNone();
-            for (PKey property : properties.getMaybe()) {
+            for (PropertyKey property : properties.getMaybe()) {
                 Value valueOfProperty = pv.readPropertyValue(objectArg.getObjectLabels(), property.toValue());
                 propertyValues = propertyValues.join(valueOfProperty);
             }

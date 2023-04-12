@@ -14,7 +14,7 @@ import dk.brics.tajs.flowgraph.jsnodes.ReadPropertyNode;
 import dk.brics.tajs.flowgraph.jsnodes.ReadVariableNode;
 import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKeys;
+import dk.brics.tajs.lattice.StringOrSymbol;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.UnknownValueResolver;
 import dk.brics.tajs.lattice.Value;
@@ -395,7 +395,7 @@ public class Stats {
             }
 
             @Override
-            public void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, PKeys propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj) {
+            public void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, StringOrSymbol propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj) {
                 int numberTypes = UnknownValueResolver.getRealValue(v, state).typeSize();
                 if (numberTypes <= 1) {
                     number_read_property_with_single_type++;

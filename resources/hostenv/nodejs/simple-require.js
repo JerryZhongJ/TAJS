@@ -63,6 +63,8 @@
 
         TAJS_makeContextSensitive(resolve, 0);
         TAJS_makeContextSensitive(resolve, -2);
+
+        // TODO: watch this
         function resolve (request) {
             return TAJS_nodeRequireResolve(request, filename);
         }
@@ -75,10 +77,14 @@
         require.extensions = dummy_extensions; // deprecated in new versions of Node.js
         require.cache = dummy_cache;
 
+        // We treat the module as a function, and we can pass it some builtin objects
         var f = TAJS_load(filename, false, "exports", "require", "module", "__filename", "__dirname");
 
         var dirname = TAJS_parentDir(filename);
+
+        // Function.prototype.apply(thisArg, [arg1, arg2, ...])
         f.apply(module.exports, [module.exports, require, module, TAJS_unURL(filename), TAJS_unURL(dirname)]);
+
         TAJS_moduleExportsFiltering(module.exports, filename);
         TAJS_assumeModuleType(filename, module);
     }
@@ -106,13 +112,19 @@
     }
 
     // ensure all functions are very sensitive
+    // parameter sensitive: filename
     TAJS_makeContextSensitive(Module, 0);
+    // object sensitive: this
     TAJS_makeContextSensitive(Module.prototype.require, -1);
+    // object sensitive: path
     TAJS_makeContextSensitive(Module.prototype.require, 0);
+    // parameter sensitive: module, filename
     TAJS_makeContextSensitive(load, 0);
     TAJS_makeContextSensitive(load, 1);
+    // parameter sensitive: filename, parentFilename
     TAJS_makeContextSensitive(require_with_parentFilename, 0);
     TAJS_makeContextSensitive(require_with_parentFilename, 1);
 
+    // This file will be TAJS_load'ed by simple-bootstrap-node.js as a function, whose only parameter is "module"
     module.exports.require_with_parentFilename = require_with_parentFilename;
-})(this);
+})(this); // define global properties without polution

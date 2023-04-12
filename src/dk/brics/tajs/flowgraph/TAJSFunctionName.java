@@ -16,6 +16,7 @@
 
 package dk.brics.tajs.flowgraph;
 
+
 /**
  * The complete list of names for TAJS_-functions.
  */
@@ -66,7 +67,9 @@ public enum TAJSFunctionName {
     TAJS_LOAD_JSON("loadJSON"), // used only in simple-require.js
     TAJS_NODE_REQUIRE_RESOLVE("nodeRequireResolve"), // used only in simple-require.js
     TAJS_NODE_PARENT_DIR("parentDir"), // used only in simple-require.js
-    TAJS_NODE_UNURL("unURL"); // used only in simple-require.js
+    TAJS_NODE_UNURL("unURL"), // used only in simple-require.js
+
+    TAJS_CHECKCTYPE("checkCType");
 
     private String string;
 

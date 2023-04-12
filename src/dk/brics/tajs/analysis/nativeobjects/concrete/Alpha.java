@@ -23,7 +23,7 @@ import dk.brics.tajs.analysis.nativeobjects.JSRegExp;
 import dk.brics.tajs.flowgraph.AbstractNode;
 import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKey;
+import dk.brics.tajs.lattice.PropertyKey;
 import dk.brics.tajs.lattice.Value;
 
 import java.util.Map;
@@ -50,7 +50,7 @@ public class Alpha {
         map.put(concreteValueQualifier, Value.makeStr(array.toSourceCode()));
         ObjectLabel label = JSArray.makeArray(sourceNode, Value.makeNum(array.getLength()), Context.makeQualifiers(map), c);
         Set<ObjectLabel> labels = singleton(label);
-        array.getExtraProperties().forEach((PKey k, ConcreteValue v) -> pv.writeProperty(labels, k.toValue(), toValue(v, c), false, true));
+        array.getExtraProperties().forEach((PropertyKey k, ConcreteValue v) -> pv.writeProperty(labels, k.toValue(), toValue(v, c), false, true));
         for (int i = 0; i < array.getLength(); i++) {
             final Value index = Value.makeStr(String.valueOf(i));
             ConcreteValue concreteValue = array.get(i);

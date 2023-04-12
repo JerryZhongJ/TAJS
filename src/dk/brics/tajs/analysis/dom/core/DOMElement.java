@@ -154,7 +154,7 @@ public class DOMElement {
                 /* Value value =*/
                 Value attributeValue = Conversion.toString(FunctionCalls.readParameter(call, s, 1), c);
 
-                if (attributeName.isMaybeSingleStr() && attributeName.isMaybeStr("class")) {
+                if (attributeName.isMaybeSingleStr() && attributeName.isMaybeExactStr("class")) {
                     PropVarOperations pv = c.getAnalysis().getPropVarOperations();
                     pv.writeProperty(call.getThis().getObjectLabels(), Value.makeStr("className"), attributeValue);
                 }

@@ -50,8 +50,8 @@ import dk.brics.tajs.flowgraph.jsnodes.ConstantNode;
 import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.HostObject;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKey;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.UnknownValueResolver;
 import dk.brics.tajs.lattice.Value;
@@ -288,11 +288,11 @@ class LogEntrySoundnessTester implements EntryVisitor<Void> {
             }
             if (isApply && cn.getNumberOfArgs() > 1) {
                 int statArgRegister = cn.getArgRegister(1);
-                Value argArrayLengthValue = readProperty(cn, statArgRegister, StringPKey.make("length"), AbstractNode.NO_VALUE);
+                Value argArrayLengthValue = readProperty(cn, statArgRegister, StringPropertyKey.make("length"), AbstractNode.NO_VALUE);
                 if (argArrayLengthValue.isMaybeSingleNum() && !argArrayLengthValue.isMaybeOtherThanNum()) {
                     int argArrayLength = argArrayLengthValue.getNum().intValue();
                     for (int i = 0; i < argArrayLength; i++) {
-                        staticArgumentsApply.add(readProperty(cn, statArgRegister, StringPKey.make("" + i), AbstractNode.NO_VALUE));
+                        staticArgumentsApply.add(readProperty(cn, statArgRegister, StringPropertyKey.make("" + i), AbstractNode.NO_VALUE));
                     }
                 } else {
                     return; // TODO support unknown length of arguments array to .apply
@@ -366,7 +366,7 @@ class LogEntrySoundnessTester implements EntryVisitor<Void> {
                     if (functionRegister != AbstractNode.NO_VALUE) {
                         return readRegister(block, functionRegister);
                     } else if (cn.getPropertyString() != null || cn.getPropertyRegister() != AbstractNode.NO_VALUE) {
-                        StringPKey k = cn.getPropertyString() != null ? StringPKey.make(cn.getPropertyString()) : null;
+                        StringPropertyKey k = cn.getPropertyString() != null ? StringPropertyKey.make(cn.getPropertyString()) : null;
                         return readProperty(cn, cn.getBaseRegister(), k, cn.getPropertyRegister());
                     } else {
                         throw new AnalysisException("Unhandled CallNode case!?!");
@@ -487,7 +487,7 @@ class LogEntrySoundnessTester implements EntryVisitor<Void> {
         return result;
     }
 
-    private Value readProperty(AbstractNode node, int base, PKey propName, int propertyNameRegister) {
+    private Value readProperty(AbstractNode node, int base, PropertyKey propName, int propertyNameRegister) {
         Map<Context, State> states = c.getAnalysisLatticeElement().getStates(node.getBlock());
         List<Value> values = states.values().stream().map(s -> {
             Value result = c.withStateAndNode(s, node, () -> {

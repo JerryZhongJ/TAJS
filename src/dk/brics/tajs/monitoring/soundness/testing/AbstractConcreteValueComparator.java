@@ -224,9 +224,9 @@ public class AbstractConcreteValueComparator {
         String concreteValue = d.getDescription();
         try {
             if (concreteValue.equals("-0")) {
-                return abstractValue.isMaybeNum(-0.0);
+                return abstractValue.isMaybeExactNum(-0.0);
             } else
-                return abstractValue.isMaybeNum(Integer.parseInt(concreteValue));
+                return abstractValue.isMaybeExactNum(Integer.parseInt(concreteValue));
         } catch (NumberFormatException e) {
             // squelch
         }
@@ -328,7 +328,7 @@ public class AbstractConcreteValueComparator {
      * @return true iff the abstract value over-approximates the concrete value.
      */
     private Boolean isAbstractValueSound(ConcreteStringDescription d, Value abstractValue) {
-        return abstractValue.isMaybeStr(d.getString()) || isBoxed(abstractValue, ObjectLabel.Kind.STRING);
+        return abstractValue.isMaybeExactStr(d.getString()) || isBoxed(abstractValue, ObjectLabel.Kind.STRING);
     }
 
     /**

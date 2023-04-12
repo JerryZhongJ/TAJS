@@ -28,7 +28,7 @@ import dk.brics.tajs.flowgraph.jsnodes.ReadVariableNode;
 import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.HostObject;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKeys;
+import dk.brics.tajs.lattice.StringOrSymbol;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.Value;
 import dk.brics.tajs.solver.BlockAndContext;
@@ -179,12 +179,12 @@ public class CompositeMonitor implements IAnalysisMonitoring {
     }
 
     @Override
-    public void visitPropertyRead(AbstractNode n, Set<ObjectLabel> objs, PKeys propertyname, State state, boolean check_unknown) {
+    public void visitPropertyRead(AbstractNode n, Set<ObjectLabel> objs, StringOrSymbol propertyname, State state, boolean check_unknown) {
         monitors.forEach(m -> m.visitPropertyRead(n, objs, propertyname, state, check_unknown));
     }
 
     @Override
-    public void visitPropertyWrite(Node n, Set<ObjectLabel> objs, PKeys propertyname) {
+    public void visitPropertyWrite(Node n, Set<ObjectLabel> objs, StringOrSymbol propertyname) {
         monitors.forEach(m -> m.visitPropertyWrite(n, objs, propertyname));
     }
 
@@ -199,7 +199,7 @@ public class CompositeMonitor implements IAnalysisMonitoring {
     }
 
     @Override
-    public void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, PKeys propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj) {
+    public void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, StringOrSymbol propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj) {
         monitors.forEach(m -> m.visitReadProperty(n, objlabels, propertyname, maybe, state, v, global_obj));
     }
 

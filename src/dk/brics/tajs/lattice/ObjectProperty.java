@@ -46,7 +46,7 @@ public class ObjectProperty {
     /**
      * Constructs an ObjectProperty for an ordinary property.
      */
-    public static ObjectProperty makeOrdinary(ObjectLabel objlabel, PKey propertyname) {
+    public static ObjectProperty makeOrdinary(ObjectLabel objlabel, PropertyKey propertyname) {
         return new ObjectProperty(objlabel, Property.makeOrdinaryProperty(propertyname));
     }
 
@@ -175,7 +175,7 @@ public class ObjectProperty {
     /**
      * Returns the property key (for ordinary properties).
      */
-    public PKey getPropertyName() {
+    public PropertyKey getPropertyName() {
         return property.getPropertyName();
     }
 

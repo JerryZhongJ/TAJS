@@ -38,7 +38,7 @@ public class MustEquals {// TODO: use copy-on-write?
     /**
      * Map from singleton object label to fixed property key to set of registers that must have the same value.
      */
-    private Map<ObjectLabel, Map<PKey, Set<Integer>>> mustEquals;
+    private Map<ObjectLabel, Map<PropertyKey, Set<Integer>>> mustEquals;
 
     private Map<Integer, Set<ObjectProperty>> mustEqualsReverse;
 
@@ -56,7 +56,7 @@ public class MustEquals {// TODO: use copy-on-write?
     public MustEquals(MustEquals old) {
         mustEquals = newMap();
         old.mustEquals.forEach((objlabel, m) -> {
-            Map<PKey, Set<Integer>> mn = newMap();
+            Map<PropertyKey, Set<Integer>> mn = newMap();
             mustEquals.put(objlabel, mn);
             m.forEach((pkey, s) -> mn.put(pkey, newSet(s)));
         });
@@ -77,7 +77,7 @@ public class MustEquals {// TODO: use copy-on-write?
                 }
             }
             for (ObjectLabel objectLabel : mustEquals.keySet()) {
-                for (PKey propname : mustEquals.get(objectLabel).keySet()) {
+                for (PropertyKey propname : mustEquals.get(objectLabel).keySet()) {
                     for (int reg : mustEquals.get(objectLabel).get(propname)) {
                         if (!mustEqualsReverse.get(reg).contains(ObjectProperty.makeOrdinary(objectLabel, propname))) {
                             throw new AnalysisException("MustEquals contains information not in MustEqualsReverse");
@@ -100,7 +100,7 @@ public class MustEquals {// TODO: use copy-on-write?
      * Empties this MustEquals for the given object label.
      */
     public void setToBottom(ObjectLabel objlabel) {
-        Map<PKey, Set<Integer>> m = mustEquals.remove(objlabel);
+        Map<PropertyKey, Set<Integer>> m = mustEquals.remove(objlabel);
         if (m != null)
             m.values().forEach(regs -> regs.forEach(reg -> {
                 Set<ObjectProperty> s = mustEqualsReverse.get(reg);
@@ -116,8 +116,8 @@ public class MustEquals {// TODO: use copy-on-write?
     /**
      * Empties this MustEquals for the given object label and property key.
      */
-    public void setToBottom(ObjectLabel objlabel, PKey pkey) {
-        Map<PKey, Set<Integer>> m = mustEquals.get(objlabel);
+    public void setToBottom(ObjectLabel objlabel, PropertyKey pkey) {
+        Map<PropertyKey, Set<Integer>> m = mustEquals.get(objlabel);
         if (m != null) {
             Set<Integer> regs = m.remove(pkey);
             if (regs != null)
@@ -154,7 +154,7 @@ public class MustEquals {// TODO: use copy-on-write?
         Set<ObjectProperty> ops = mustEqualsReverse.remove(reg);
         if (ops != null)
             ops.forEach(op -> {
-                Map<PKey, Set<Integer>> m = mustEquals.get(op.getObjectLabel());
+                Map<PropertyKey, Set<Integer>> m = mustEquals.get(op.getObjectLabel());
                 if (m != null) {
                     Set<Integer> registers = m.get(op.getPropertyName());
                     registers.remove(reg);
@@ -172,10 +172,10 @@ public class MustEquals {// TODO: use copy-on-write?
      * Adds a must-equals fact.
      * Records that the value of reg must be equal to the value of objlabel.pkey.
      */
-    public void addMustEquals(int reg, ObjectLabel objlabel, PKey pkey) {
+    public void addMustEquals(int reg, ObjectLabel objlabel, PropertyKey pkey) {
         if (objlabel == null || pkey == null)
             return;
-        Map<PKey, Set<Integer>> m = mustEquals.get(objlabel);
+        Map<PropertyKey, Set<Integer>> m = mustEquals.get(objlabel);
         if (m != null)
             for (int aliasreg : m.getOrDefault(pkey, java.util.Collections.emptySet())) {
                 Set<ObjectProperty> aliases = mustEqualsReverse.get(aliasreg);
@@ -205,7 +205,7 @@ public class MustEquals {// TODO: use copy-on-write?
      * Returns the must-equals facts for the given object label and property key.
      * Should not be modified by the caller.
      */
-    public Set<Integer> getMustEquals(ObjectLabel objlabel, PKey pkey) {
+    public Set<Integer> getMustEquals(ObjectLabel objlabel, PropertyKey pkey) {
         return mustEquals.getOrDefault(objlabel, java.util.Collections.emptyMap()).getOrDefault(pkey, java.util.Collections.emptySet());
     }
 
@@ -223,15 +223,15 @@ public class MustEquals {// TODO: use copy-on-write?
     public boolean propagate(MustEquals other) {
         checkInvariants();
         boolean changed = false;
-        for (Iterator<Map.Entry<ObjectLabel, Map<PKey, Set<Integer>>>> it1 = mustEquals.entrySet().iterator(); it1.hasNext();) {
-            Map.Entry<ObjectLabel, Map<PKey, Set<Integer>>> thisme1 = it1.next();
+        for (Iterator<Map.Entry<ObjectLabel, Map<PropertyKey, Set<Integer>>>> it1 = mustEquals.entrySet().iterator(); it1.hasNext();) {
+            Map.Entry<ObjectLabel, Map<PropertyKey, Set<Integer>>> thisme1 = it1.next();
             ObjectLabel obj = thisme1.getKey();
-            Map<PKey, Set<Integer>> otherm = other.mustEquals.get(obj);
+            Map<PropertyKey, Set<Integer>> otherm = other.mustEquals.get(obj);
             if (otherm != null) {
-                Map<PKey, Set<Integer>> thism = thisme1.getValue();
-                for (Iterator<Map.Entry<PKey, Set<Integer>>> it2 = thism.entrySet().iterator(); it2.hasNext();) {
-                    Map.Entry<PKey, Set<Integer>> thisme2 = it2.next();
-                    PKey pkey = thisme2.getKey();
+                Map<PropertyKey, Set<Integer>> thism = thisme1.getValue();
+                for (Iterator<Map.Entry<PropertyKey, Set<Integer>>> it2 = thism.entrySet().iterator(); it2.hasNext();) {
+                    Map.Entry<PropertyKey, Set<Integer>> thisme2 = it2.next();
+                    PropertyKey pkey = thisme2.getKey();
                     Set<Integer> others = otherm.get(pkey);
                     if (others != null) {
                         Set<Integer> thiss = thisme2.getValue();
@@ -275,7 +275,7 @@ public class MustEquals {// TODO: use copy-on-write?
         checkInvariants();
         if (oldlabel.getKind() == ObjectLabel.Kind.SYMBOL)
             throw new AnalysisException("Unexpected symbol"); // the code below doesn't replace PKeys in mustEquals
-        Map<PKey, Set<Integer>> m = mustEquals.remove(oldlabel);
+        Map<PropertyKey, Set<Integer>> m = mustEquals.remove(oldlabel);
         if (m != null) {
             mustEquals.put(newlabel, m);
             for (Set<Integer> regs : m.values())
@@ -312,11 +312,11 @@ public class MustEquals {// TODO: use copy-on-write?
     /**
      * If this is a singleton string or a symbol, then return the corresponding PKey, otherwise null.
      */
-    public static PKey getSingleton(Value propertystr) {
+    public static PropertyKey getSingleton(Value propertystr) {
         if (propertystr.isMaybeSingleStr() && !propertystr.isMaybeOtherThanStr())
-            return PKey.StringPKey.make(propertystr.getStr());
+            return PropertyKey.StringPropertyKey.make(propertystr.getStr());
         else if (propertystr.isMaybeSymbol() && !propertystr.isMaybeOtherThanSymbol() && propertystr.getObjectLabels().size() == 1)
-            return PKey.SymbolPKey.make(propertystr.getObjectLabels().iterator().next());
+            return PropertyKey.SymbolPKey.make(propertystr.getObjectLabels().iterator().next());
         return null;
     }
 }

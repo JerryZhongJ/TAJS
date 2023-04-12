@@ -34,8 +34,8 @@ import dk.brics.tajs.flowgraph.jsnodes.UnaryOperatorNode;
 import dk.brics.tajs.flowgraph.jsnodes.WritePropertyNode;
 import dk.brics.tajs.flowgraph.jsnodes.WriteVariableNode;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKey;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.lattice.ScopeChain;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.UnknownValueResolver;
@@ -380,10 +380,10 @@ public class UnevalTools {
                         if (!l.equals(InitialStateBuilder.GLOBAL)) {
                             if (UnknownValueResolver.getDefaultOtherProperty(l, state).isNotAbsent()) // TODO: javadoc
                                 return null;
-                            for (PKey propertyname : UnknownValueResolver.getProperties(l, state).keySet())
+                            for (PropertyKey propertyname : UnknownValueResolver.getProperties(l, state).keySet())
                                 if (UnknownValueResolver.getProperty(l, propertyname, state, true).isMaybePresent())
-                                    if (propertyname instanceof StringPKey)
-                                        res.add(((StringPKey)propertyname).getStr());
+                                    if (propertyname instanceof StringPropertyKey)
+                                        res.add(((StringPropertyKey)propertyname).getStr());
                         }
                 return res;
             }

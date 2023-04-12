@@ -25,6 +25,7 @@ import dk.brics.tajs.util.Strings;
  * Read variable node.
  * <p>
  * <i>v</i><sub><i>result</i></sub> = <i>x</i>
+ * v_result = x
  */
 public class ReadVariableNode extends LoadNode {
 

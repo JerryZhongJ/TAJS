@@ -27,10 +27,10 @@ import dk.brics.tajs.lattice.FunctionTypeSignatures;
 import dk.brics.tajs.lattice.Obj;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectProperty;
-import dk.brics.tajs.lattice.PKey;
-import dk.brics.tajs.lattice.PKey.StringPKey;
-import dk.brics.tajs.lattice.PKey.SymbolPKey;
-import dk.brics.tajs.lattice.PKeys;
+import dk.brics.tajs.lattice.PropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.SymbolPKey;
+import dk.brics.tajs.lattice.StringOrSymbol;
 import dk.brics.tajs.lattice.PartitionedValue;
 import dk.brics.tajs.lattice.Property;
 import dk.brics.tajs.lattice.ScopeChain;
@@ -110,7 +110,7 @@ public class PropVarOperations {
      * The internal prototype chains are used.
      * Absent is converted to undefined. Attributes are set to bottom.
      */
-    public Value readPropertyValue(Collection<ObjectLabel> objlabels, PKeys propertystr) {
+    public Value readPropertyValue(Collection<ObjectLabel> objlabels, StringOrSymbol propertystr) {
         return readPropertyValue(objlabels, propertystr, null);
     }
 
@@ -122,7 +122,7 @@ public class PropVarOperations {
      *
      * @param collect if non-null, collect the objects where the property may be found
      */
-    public Value readPropertyValue(Collection<ObjectLabel> objlabels, PKeys propertystr, Set<ObjectLabel> collect) {
+    public Value readPropertyValue(Collection<ObjectLabel> objlabels, StringOrSymbol propertystr, Set<ObjectLabel> collect) {
         Value v = readPropertyRaw(objlabels, propertystr, false, false, collect);
         if (v.isMaybeAbsent())
             v = v.restrictToNotAbsent().joinUndef();
@@ -146,7 +146,7 @@ public class PropVarOperations {
      * The internal prototype chains are used.
      * Getters are not called.
      */
-    public Pair<Set<ObjectLabel>,Value> readPropertyWithAttributesAndObjs(Collection<ObjectLabel> objlabels, PKey propertyname) {
+    public Pair<Set<ObjectLabel>,Value> readPropertyWithAttributesAndObjs(Collection<ObjectLabel> objlabels, PropertyKey propertyname) {
         Set<ObjectLabel> objs = newSet();
         Value v = readPropertyRaw(objlabels, propertyname.toValue(), false, true, objs);
         if (log.isDebugEnabled())
@@ -159,7 +159,7 @@ public class PropVarOperations {
      * The internal prototype chains are used.
      * Getters are not called.
      */
-    public Value readPropertyWithAttributes(Collection<ObjectLabel> objlabels, PKeys propertystr) {
+    public Value readPropertyWithAttributes(Collection<ObjectLabel> objlabels, StringOrSymbol propertystr) {
         Value v = readPropertyRaw(objlabels, propertystr, false, true, null);
         if (log.isDebugEnabled())
             log.debug("readPropertyWithAttributes(" + objlabels + "," + propertystr + ") = " + v);
@@ -174,7 +174,7 @@ public class PropVarOperations {
      * @param no_call_getters if set, do not call getters
      * @param collect if non-null, collect the objects where the property may be found
      */
-    private Value readPropertyRaw(Collection<ObjectLabel> objlabels, PKeys propertystr, boolean only_attributes, boolean no_call_getters, Set<ObjectLabel> collect) {
+    private Value readPropertyRaw(Collection<ObjectLabel> objlabels, StringOrSymbol propertystr, boolean only_attributes, boolean no_call_getters, Set<ObjectLabel> collect) {
         Collection<Value> values = newList();
         Set<ObjectLabel> visited = newSet();
         BasicBlock implicitAfterCall = null;
@@ -321,10 +321,10 @@ public class PropVarOperations {
     }
 
     /**
-     * Variant of {@link #readPropertyDirect(ObjectLabel, PKeys)} for string objects.
+     * Variant of {@link #readPropertyDirect(ObjectLabel, StringOrSymbol)} for string objects.
      * String objects have their own [[GetOwnProperty]], see 15.5.5.2 in the ECMAScript 5 standard.
      */
-    private Value readStringPropertyDirect(ObjectLabel str, PKeys propertystr) {
+    private Value readStringPropertyDirect(ObjectLabel str, StringOrSymbol propertystr) {
         Value internal_value = UnknownValueResolver.getInternalValue(str, c.getState(), false);
         if (internal_value.isNone()) {
             return Value.makeNone();
@@ -406,7 +406,7 @@ public class PropVarOperations {
      * Returns the value of the given property in the objects.
      * The internal prototype chains and scope chains are <em>not</em> used.
      */
-    public Value readPropertyDirect(Collection<ObjectLabel> objlabels, PKey propertyname) {
+    public Value readPropertyDirect(Collection<ObjectLabel> objlabels, PropertyKey propertyname) {
         State state = c.getState();
         Collection<Value> values = newList();
         for (ObjectLabel obj : objlabels)
@@ -421,15 +421,15 @@ public class PropVarOperations {
      * Returns the join of the values of the given properties of an object.
      * The internal prototype chains and scope chains are <em>not</em> used.
      */
-    public Value readPropertyDirect(ObjectLabel objlabel, PKeys propertystr) {
+    public Value readPropertyDirect(ObjectLabel objlabel, StringOrSymbol propertystr) {
         State state = c.getState();
         Collection<Value> values = newList();
         // read string property keys
         if (propertystr.isMaybeSingleStr()) {
-            values.add(UnknownValueResolver.getProperty(objlabel, StringPKey.make(propertystr.getStr()), state, true));
+            values.add(UnknownValueResolver.getProperty(objlabel, StringPropertyKey.make(propertystr.getStr()), state, true));
         } else if (propertystr.getIncludedStrings() != null) {
             propertystr.getIncludedStrings().forEach(n ->
-                    values.add(UnknownValueResolver.getProperty(objlabel, StringPKey.make(n), state, true))
+                    values.add(UnknownValueResolver.getProperty(objlabel, StringPropertyKey.make(n), state, true))
             );
         } else if (propertystr.isMaybeFuzzyStr()) {
             if (propertystr.isMaybeStrSomeNumeric())
@@ -437,8 +437,8 @@ public class PropVarOperations {
             if (propertystr.isMaybeStrSomeNonNumeric())
                 values.add(UnknownValueResolver.getDefaultOtherProperty(objlabel, state));
             // the calls to UnknownValueResolver above have materialized all relevant properties
-            for (PKey propertyname : state.getObject(objlabel, false).getPropertyNames())
-                if (propertyname instanceof StringPKey && propertyname.isMaybeValue(propertystr)) {
+            for (PropertyKey propertyname : state.getObject(objlabel, false).getPropertyNames())
+                if (propertyname instanceof StringPropertyKey && propertyname.isMaybeValue(propertystr)) {
                     if (unsoundness.maySkipSpecificDynamicPropertyRead(c.getNode(), propertyname)) {
                         continue;
                     }
@@ -456,7 +456,7 @@ public class PropVarOperations {
      * [[HasProperty]].
      * The internal prototype chains are used.
      */
-    private Bool hasPropertyRaw(Collection<ObjectLabel> objlabels, PKeys propertyname) {
+    private Bool hasPropertyRaw(Collection<ObjectLabel> objlabels, StringOrSymbol propertyname) {
         Value v = readPropertyRaw(objlabels, propertyname, true, true, null);
         boolean maybe_present = v.isMaybePresent();
         boolean maybe_absent = v.isMaybeAbsent();
@@ -467,7 +467,7 @@ public class PropVarOperations {
      * Checks whether the given property is present in the given objects.
      * The internal prototype chains are used.
      */
-    public Bool hasProperty(Collection<ObjectLabel> objlabels, PKeys propertyname) {
+    public Bool hasProperty(Collection<ObjectLabel> objlabels, StringOrSymbol propertyname) {
         Bool b = hasPropertyRaw(objlabels, propertyname);
         if (log.isDebugEnabled())
             log.debug("hasProperty(" + objlabels + "," + propertyname + ") = " + b);
@@ -504,26 +504,26 @@ public class PropVarOperations {
     }
 
     /**
-     * Same as {@link #writeProperty(Collection, PKeys, Value, boolean)},
+     * Same as {@link #writeProperty(Collection, StringOrSymbol, Value, boolean)},
      * with force_weak set to false.
      */
-    public void writeProperty(Collection<ObjectLabel> objlabels, PKeys propertystr, Value value) {
+    public void writeProperty(Collection<ObjectLabel> objlabels, StringOrSymbol propertystr, Value value) {
         writeProperty(objlabels, propertystr, value, false);
     }
 
     /**
-     * Same as {@link #writeProperty(Collection, PKeys, Value, boolean, boolean)},
+     * Same as {@link #writeProperty(Collection, StringOrSymbol, Value, boolean, boolean)},
      * with not_invoke_setters set to false.
      */
-    public void writeProperty(Collection<ObjectLabel> objlabels, PKeys propertystr, Value value, boolean force_weak) {
+    public void writeProperty(Collection<ObjectLabel> objlabels, StringOrSymbol propertystr, Value value, boolean force_weak) {
         writeProperty(objlabels, propertystr, value, force_weak, false);
     }
 
     /**
-     * Same as {@link #writeProperty(Collection, PKeys, Value, boolean, boolean, boolean, boolean)},
+     * Same as {@link #writeProperty(Collection, StringOrSymbol, Value, boolean, boolean, boolean, boolean)},
      * with process_attributes set to true and value_has_attributes set to false.
      */
-    public void writeProperty(Collection<ObjectLabel> objlabels, PKeys propertystr, Value value, boolean force_weak, boolean not_invoke_setters) {
+    public void writeProperty(Collection<ObjectLabel> objlabels, StringOrSymbol propertystr, Value value, boolean force_weak, boolean not_invoke_setters) {
         writeProperty(objlabels, propertystr, value, true, false, force_weak, not_invoke_setters);
     }
 
@@ -537,7 +537,7 @@ public class PropVarOperations {
      * @param force_weak if set, force weak update disregarding objlabels
      * @param not_invoke_setters if set, do not invoke setter (e.g. for property declarations in literals)
      */
-    public void writeProperty(Collection<ObjectLabel> objlabels, PKeys propertystr, Value value, boolean process_attributes, boolean value_has_attributes, boolean force_weak, boolean not_invoke_setters) {
+    public void writeProperty(Collection<ObjectLabel> objlabels, StringOrSymbol propertystr, Value value, boolean process_attributes, boolean value_has_attributes, boolean force_weak, boolean not_invoke_setters) {
         if (Options.get().isDebugOrTestEnabled() && propertystr.isMaybeOtherThanStrOrSymbol()) {
             throw new AnalysisException("Uncoerced property name: " + propertystr);
         }
@@ -546,10 +546,10 @@ public class PropVarOperations {
         ParallelTransfer pt = new ParallelTransfer(c);
         for (ObjectLabel objlabel : objlabels) {
             if (propertystr.isMaybeSingleStr()) {
-                pt.add(() -> writeProperty(ObjectProperty.makeOrdinary(objlabel, PKey.make(propertystr)), value, process_attributes, value_has_attributes, true, true, weak, not_invoke_setters));
+                pt.add(() -> writeProperty(ObjectProperty.makeOrdinary(objlabel, PropertyKey.make(propertystr)), value, process_attributes, value_has_attributes, true, true, weak, not_invoke_setters));
             } else if (propertystr.getIncludedStrings() != null) {
                 propertystr.getIncludedStrings().forEach(specialString ->
-                        pt.add(() -> writeProperty(ObjectProperty.makeOrdinary(objlabel, StringPKey.make(specialString)), value, process_attributes, value_has_attributes, true, true, force_weak || objlabels.size() != 1 || propertystr.getIncludedStrings().size() > 1, not_invoke_setters))
+                        pt.add(() -> writeProperty(ObjectProperty.makeOrdinary(objlabel, StringPropertyKey.make(specialString)), value, process_attributes, value_has_attributes, true, true, force_weak || objlabels.size() != 1 || propertystr.getIncludedStrings().size() > 1, not_invoke_setters))
                 );
             } else if (propertystr.isMaybeFuzzyStr()) {
                 State state = c.getState();
@@ -563,8 +563,8 @@ public class PropVarOperations {
                     UnknownValueResolver.getDefaultOtherProperty(objlabel, state);
                     pt.add(() -> writeProperty(ObjectProperty.makeDefaultOther(objlabel), value, process_attributes, value_has_attributes, true, true, true, not_invoke_setters));
                 }
-                for (PKey propertyname : newSet(state.getObject(objlabel, false).getPropertyNames())) { // calls to UnknownValueResolver and materialize above have materialized all relevant properties
-                    if (propertyname instanceof StringPKey && propertyname.isMaybeValue(propertystr)) {
+                for (PropertyKey propertyname : newSet(state.getObject(objlabel, false).getPropertyNames())) { // calls to UnknownValueResolver and materialize above have materialized all relevant properties
+                    if (propertyname instanceof StringPropertyKey && propertyname.isMaybeValue(propertystr)) {
                         pt.add(() -> writeProperty(ObjectProperty.makeOrdinary(objlabel, propertyname), value, process_attributes, value_has_attributes, true, true, true, not_invoke_setters));
                     }
                 }
@@ -622,7 +622,7 @@ public class PropVarOperations {
             writeable = writeable.joinBool(true);
         if (writeable.isMaybeTrue()) {
             if (!Options.get().isNoStringSets()
-                    && (objprop.getProperty().getKind() == DEFAULT_NUMERIC || (objprop.getProperty().getKind() == ORDINARY && objprop.getPropertyName() instanceof PKey.StringPKey && Strings.isArrayIndex(((PKey.StringPKey) objprop.getPropertyName()).getStr())))
+                    && (objprop.getProperty().getKind() == DEFAULT_NUMERIC || (objprop.getProperty().getKind() == ORDINARY && objprop.getPropertyName() instanceof PropertyKey.StringPropertyKey && Strings.isArrayIndex(((PropertyKey.StringPropertyKey) objprop.getPropertyName()).getStr())))
                     && !value.isPolymorphicOrUnknown() && value.isMaybeSingleStr()) {
                 // about to write string to an array-like-property. We assume it is a string-collection, and "upgrade" it to a special string
                 value = value.join(Value.makeStrings(singleton(value.getStr())));
@@ -761,7 +761,7 @@ public class PropVarOperations {
                                 return;
                             }
                         }
-                        boolean writeInternalPrototype_fixed = objprop.getProperty().getKind() == Property.Kind.ORDINARY && StringPKey.__PROTO__.equals(objprop.getPropertyName());
+                        boolean writeInternalPrototype_fixed = objprop.getProperty().getKind() == Property.Kind.ORDINARY && StringPropertyKey.__PROTO__.equals(objprop.getPropertyName());
                         boolean writeInternalPrototype_dynamic = objprop.getProperty().getKind() == Property.Kind.DEFAULT_OTHER;
                         boolean writeInternalPrototype = writeInternalPrototype_fixed || writeInternalPrototype_dynamic;
                         boolean skipInternalPrototype = writeInternalPrototype && unsoundness.maySkipInternalProtoPropertyWrite(c.getNode());
@@ -866,8 +866,8 @@ public class PropVarOperations {
                         }
                         // write 'length' property
                         numvalue = numvalue.setAttributes(true, true, false);
-                        c.getState().getObject(objprop.getObjectLabel(), true).setProperty(StringPKey.LENGTH, numvalue.joinModified());
-                        c.getState().getMustEquals().setToBottom(objprop.getObjectLabel(), StringPKey.LENGTH);
+                        c.getState().getObject(objprop.getObjectLabel(), true).setProperty(StringPropertyKey.LENGTH, numvalue.joinModified());
+                        c.getState().getMustEquals().setToBottom(objprop.getObjectLabel(), StringPropertyKey.LENGTH);
                     }
                 }
             }
@@ -879,11 +879,11 @@ public class PropVarOperations {
                     v = Value.makeNum(Math.max(old_length, Double.valueOf(propertystr.getStr()) + 1));
                 else
                     v = Value.makeAnyNumUInt();
-                c.getState().getObject(objprop.getObjectLabel(), true).setProperty(StringPKey.LENGTH, v.setAttributes(true, true, false).joinModified());
-                c.getState().getMustEquals().setToBottom(objprop.getObjectLabel(), StringPKey.LENGTH);
+                c.getState().getObject(objprop.getObjectLabel(), true).setProperty(StringPropertyKey.LENGTH, v.setAttributes(true, true, false).joinModified());
+                c.getState().getMustEquals().setToBottom(objprop.getObjectLabel(), StringPropertyKey.LENGTH);
             }
         }
-        return objprop.getKind() == ORDINARY && StringPKey.LENGTH.equals(objprop.getPropertyName());
+        return objprop.getKind() == ORDINARY && StringPropertyKey.LENGTH.equals(objprop.getPropertyName());
     }
 
     /**
@@ -907,15 +907,15 @@ public class PropVarOperations {
      * Modified is set on all values being written.
      *
      */
-    public void writeProperty(ObjectLabel objlabel, PKey propertyname, Value value) {
+    public void writeProperty(ObjectLabel objlabel, PropertyKey propertyname, Value value) {
         writePropertyWithAttributes(objlabel, propertyname, value.setAttributes(false, false, false));
     }
 
     /**
-     * @see #writeProperty(ObjectLabel, PKey, Value)
+     * @see #writeProperty(ObjectLabel, PropertyKey, Value)
      */
     public void writeProperty(ObjectLabel objlabel, String propertyname, Value value) {
-        writeProperty(objlabel, StringPKey.make(propertyname), value);
+        writeProperty(objlabel, StringPropertyKey.make(propertyname), value);
     }
     /**
      * Assigns the given value to the given property of the given objects, with attributes.
@@ -924,7 +924,7 @@ public class PropVarOperations {
      * @param set_modified if set, the modified flag is set on written values
      * @param decl if set, do not invoke setter (e.g. for property declarations in literals)
      */
-    public void writePropertyWithAttributes(Collection<ObjectLabel> objlabels, PKey propertyname, Value value, boolean set_modified, boolean decl) {
+    public void writePropertyWithAttributes(Collection<ObjectLabel> objlabels, PropertyKey propertyname, Value value, boolean set_modified, boolean decl) {
         writePropertyWithAttributes(objlabels, propertyname, value, set_modified, false, decl);
     }
 
@@ -935,7 +935,7 @@ public class PropVarOperations {
      * @param set_modified if set, the modified flag is set on written values
      * @param decl if set, do not invoke setter (e.g. for property declarations in literals)
      */
-    public void writePropertyWithAttributes(Collection<ObjectLabel> objlabels, PKey propertyname, Value value, boolean set_modified, boolean force_weak, boolean decl) {
+    public void writePropertyWithAttributes(Collection<ObjectLabel> objlabels, PropertyKey propertyname, Value value, boolean set_modified, boolean force_weak, boolean decl) {
         writeProperty(objlabels, Property.makeOrdinaryProperty(propertyname), value, false, true, set_modified, true, force_weak, decl);
         if (log.isDebugEnabled())
             log.debug("writePropertyWithAttributes(" + objlabels + "," + propertyname + "," + value + "," + value.printAttributes() + ")");
@@ -946,7 +946,7 @@ public class PropVarOperations {
      * Attributes are taken from the given value.
      * Modified is set on all values being written.
      */
-    public void writePropertyWithAttributes(Collection<ObjectLabel> objlabels, PKey propertyname, Value value) {
+    public void writePropertyWithAttributes(Collection<ObjectLabel> objlabels, PropertyKey propertyname, Value value) {
         writePropertyWithAttributes(objlabels, propertyname, value, true, true);
     }
 
@@ -955,15 +955,15 @@ public class PropVarOperations {
      * Attributes are taken from the given value. Setters are not invoked.
      * Modified is set on all values being written.
      */
-    public void writePropertyWithAttributes(ObjectLabel objlabel, PKey propertyname, Value value) {
+    public void writePropertyWithAttributes(ObjectLabel objlabel, PropertyKey propertyname, Value value) {
         writePropertyWithAttributes(Collections.singleton(objlabel), propertyname, value, true, true);
     }
 
     /**
-     * @see #writePropertyWithAttributes(ObjectLabel, PKey, Value)
+     * @see #writePropertyWithAttributes(ObjectLabel, PropertyKey, Value)
      */
     public void writePropertyWithAttributes(ObjectLabel objlabel, String propertyname, Value value) {
-        writePropertyWithAttributes(Collections.singleton(objlabel), StringPKey.make(propertyname), value, true, true);
+        writePropertyWithAttributes(Collections.singleton(objlabel), StringPropertyKey.make(propertyname), value, true, true);
     }
     /**
      * Checks for the given value that attributes are non-bottom if the value is nonempty.
@@ -1019,7 +1019,7 @@ public class PropVarOperations {
                         if (h.isMaybeFalseButNotTrue() && !it.hasNext() && unsoundness.maySkipDeclaringGlobalVariablesImplicitly(c.getNode(), varname)) {
                             return;
                         }
-                        writeProperty(ObjectProperty.makeOrdinary(objlabel, StringPKey.make(varname)), value, true, false, set_modified, true, false, not_invoke_setters);
+                        writeProperty(ObjectProperty.makeOrdinary(objlabel, StringPropertyKey.make(varname)), value, true, false, set_modified, true, false, not_invoke_setters);
                         objlabels.add(objlabel);
                     });
                 }
@@ -1053,7 +1053,7 @@ public class PropVarOperations {
         // variable object and using property attributes { DontDelete }.
         // TODO: variable instantiation (excluding the activation object arguments property) in eval code should use empty attributes, i.e. without DontDelete (10.2.2)
         value.assertNonEmpty();
-        writeProperty(state.getExecutionContext().getVariableObject(), Property.makeOrdinaryProperty(StringPKey.make(varname)), value.restrictToNotAbsent().setAttributes(false, true, false), false, false, true, allow_overwrite, false, false);
+        writeProperty(state.getExecutionContext().getVariableObject(), Property.makeOrdinaryProperty(StringPropertyKey.make(varname)), value.restrictToNotAbsent().setAttributes(false, true, false), false, false, true, allow_overwrite, false, false);
         if (log.isDebugEnabled())
             log.debug("declareAndWriteVariable(" + varname + "," + value + ")");
     }
@@ -1066,7 +1066,7 @@ public class PropVarOperations {
     }
 
     /**
-     * Returns the value of the given variable.
+     * Returns the value of the given variable. base_objs is filled with the base objects where the variable may be stored in the scope chain.
      * @param varname   the variable name
      * @param base_objs collection where base objects are added (ignored if null)
      * @param not_invoke_getters if set, do not invoke getter (e.g. for assume-node variable updates)
@@ -1075,16 +1075,19 @@ public class PropVarOperations {
     public Value readVariable(String varname, Collection<ObjectLabel> base_objs, boolean not_invoke_getters, boolean preserve_attributes) {
         Collection<Value> values = newList();
         boolean definitely_found_at_some_level = false;
-        for (Set<ObjectLabel> sc : ScopeChain.iterable(c.getState().getExecutionContext().getScopeChain())) {
+        for (Set<ObjectLabel> scope_chain : ScopeChain.iterable(c.getState().getExecutionContext().getScopeChain())) {
             boolean definitely_found_at_current_level = true;
-            for (ObjectLabel objlabel : sc) {
-                Value v = readPropertyRaw(Collections.singleton(objlabel), Value.makeTemporaryStr(varname), false, not_invoke_getters, null);
-                if (v.isMaybePresent()) { // found one (maybe)
-                    values.add(preserve_attributes ? v : v.setBottomPropertyData());
+            for (ObjectLabel scope : scope_chain) {
+
+                // This is where value come fome
+                Value value = readPropertyRaw(Collections.singleton(scope), Value.makeTemporaryStr(varname), false, not_invoke_getters, null);
+                
+                if (value.isMaybePresent()) { // found one (maybe)
+                    values.add(preserve_attributes ? value : value.setBottomPropertyData());
                     if (base_objs != null)
-                        base_objs.add(objlabel); // collecting the object from the scope chain (although the property may be in its prototype chain)
+                        base_objs.add(scope); // collecting the object from the scope chain (although the property may be in its prototype chain)
                 }
-                if (v.isMaybeAbsent()) {
+                if (value.isMaybeAbsent()) {
                     definitely_found_at_current_level = false;
                 }
             }
@@ -1105,7 +1108,7 @@ public class PropVarOperations {
     /**
      * Deletes the given variable.
      *
-     * @see #deleteProperty(Collection, PKeys, boolean)
+     * @see #deleteProperty(Collection, StringOrSymbol, boolean)
      */
     public Value deleteVariable(String varname) {
         State state = c.getState();
@@ -1149,14 +1152,14 @@ public class PropVarOperations {
      * Ignored if the property has attribute DontDelete.
      * Returns false if attempting to delete a property with attribute DontDelete, true otherwise.
      */
-    public Value deleteProperty(Collection<ObjectLabel> objlabels, PKeys propertystr, boolean force_weak) {
+    public Value deleteProperty(Collection<ObjectLabel> objlabels, StringOrSymbol propertystr, boolean force_weak) {
         Value res = Value.makeNone();
         final boolean weak = force_weak || objlabels.size() > 1 || propertystr.isMaybeFuzzyStrOrSymbol();
         for (ObjectLabel objlabel : objlabels) {
             if (weak) {
                 res = res.joinBool(weakDeleteProperty(objlabel, propertystr));
             } else if (propertystr.isMaybeSingleStr() || propertystr.isMaybeSymbol()) {
-                res = strongDeleteProperty(objlabel, PKey.make(propertystr));
+                res = strongDeleteProperty(objlabel, PropertyKey.make(propertystr));
             }
         }
         if (log.isDebugEnabled())
@@ -1167,7 +1170,7 @@ public class PropVarOperations {
     /**
      * Deletes the given property (strong update).
      */
-    private Value strongDeleteProperty(ObjectLabel objlabel, PKey propertyname) {
+    private Value strongDeleteProperty(ObjectLabel objlabel, PropertyKey propertyname) {
         // 8.6.2.5 [[Delete]] (P)
         // When the [[Delete]] method of O is called with property name P, the following steps are taken:
         // 1. If O doesn't have a property with name P, return true.
@@ -1199,7 +1202,7 @@ public class PropVarOperations {
     /**
      * Deletes the given property (weak update).
      */
-    private Value weakDeleteProperty(ObjectLabel objlabel, PKeys propertystr) {
+    private Value weakDeleteProperty(ObjectLabel objlabel, StringOrSymbol propertystr) {
         // 8.6.2.5 [[Delete]] (P)
         // When the [[Delete]] method of O is called with property name P, the following steps are taken:
         // 1. If O doesn't have a property with name P, return true.
@@ -1208,15 +1211,15 @@ public class PropVarOperations {
         // 4. Return true.
         Value res = Value.makeNone();
         if (propertystr.isMaybeSingleStr())
-            res = res.joinBool(weakDeleteProperty(ObjectProperty.makeOrdinary(objlabel, PKey.make(propertystr))));
+            res = res.joinBool(weakDeleteProperty(ObjectProperty.makeOrdinary(objlabel, PropertyKey.make(propertystr))));
         else if (propertystr.isMaybeFuzzyStr()) {
             if (propertystr.isMaybeStrSomeNumeric())
                 res = res.joinBool(weakDeleteProperty(ObjectProperty.makeDefaultNumeric(objlabel)));
             if (propertystr.isMaybeStrSomeNonNumeric())
                 res = res.joinBool(weakDeleteProperty(ObjectProperty.makeDefaultOther(objlabel)));
             // the calls to readProperty above via weakDeleteProperty have materialized all relevant properties
-            for (PKey propertyname : newSet(c.getState().getObject(objlabel, false).getPropertyNames()))
-              if (propertyname instanceof StringPKey && propertyname.isMaybeValue(propertystr))
+            for (PropertyKey propertyname : newSet(c.getState().getObject(objlabel, false).getPropertyNames()))
+              if (propertyname instanceof StringPropertyKey && propertyname.isMaybeValue(propertystr))
                   res = res.joinBool(weakDeleteProperty(ObjectProperty.makeOrdinary(objlabel, propertyname)));
         }
         propertystr.getSymbols().forEach(s ->

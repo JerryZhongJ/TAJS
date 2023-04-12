@@ -30,7 +30,7 @@ import dk.brics.tajs.flowgraph.jsnodes.CallNode;
 import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectLabel.Kind;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.UnknownValueResolver;
 import dk.brics.tajs.lattice.Value;
@@ -235,11 +235,11 @@ public class JSRegExp {
 
     private static void writeRegExpProperties(Set<ObjectLabel> regexp, State state, Value pattern, Value global, Value ignoreCase, Value multiline, Value lastIndex, PropVarOperations pv) {
         state.writeInternalValue(regexp, pattern);
-        pv.writePropertyWithAttributes(regexp, StringPKey.make("source"), pattern.setAttributes(true, true, true));
-        pv.writePropertyWithAttributes(regexp, StringPKey.make("lastIndex"), lastIndex.setAttributes(true, true, false));
-        pv.writePropertyWithAttributes(regexp, StringPKey.make("global"), global.setAttributes(true, true, true));
-        pv.writePropertyWithAttributes(regexp, StringPKey.make("ignoreCase"), ignoreCase.setAttributes(true, true, true));
-        pv.writePropertyWithAttributes(regexp, StringPKey.make("multiline"), multiline.setAttributes(true, true, true));
+        pv.writePropertyWithAttributes(regexp, StringPropertyKey.make("source"), pattern.setAttributes(true, true, true));
+        pv.writePropertyWithAttributes(regexp, StringPropertyKey.make("lastIndex"), lastIndex.setAttributes(true, true, false));
+        pv.writePropertyWithAttributes(regexp, StringPropertyKey.make("global"), global.setAttributes(true, true, true));
+        pv.writePropertyWithAttributes(regexp, StringPropertyKey.make("ignoreCase"), ignoreCase.setAttributes(true, true, true));
+        pv.writePropertyWithAttributes(regexp, StringPropertyKey.make("multiline"), multiline.setAttributes(true, true, true));
     }
 
     public static Value handleUnknownRegexMatchResult(AbstractNode sourceNode, Value regex, Solver.SolverInterface c) {

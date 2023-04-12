@@ -63,6 +63,8 @@ public class GenericSolver<StateType extends IState<StateType, ContextType, Call
 
     /**
      * Messages are disabled during fixpoint iteration and enabled in the subsequent scan phase.
+     * In fixpoint iteration, the final values are not ready, it is not time to report warnings.
+     * After fixpoint iteration, another scan is performed to find ....
      */
     private boolean messages_enabled;
 

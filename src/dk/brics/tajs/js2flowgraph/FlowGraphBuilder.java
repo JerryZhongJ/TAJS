@@ -583,14 +583,18 @@ public class FlowGraphBuilder {
         SourceLocation loaderDummySourceLocation = new SyntheticLocationMaker("host-environment-sources-loader").makeUnspecifiedPosition();
 
         BasicBlock appendBlock = mainEnv.getFunction().getEntry().getSingleSuccessor();
+        // Add synthetic node to the ast for each host function sources
         for (URL source : sources) {
             appendBlock = makeSuccessorBasicBlock(appendBlock, functionAndBlocksManager);
             int sourceRegister = mainEnv.getRegisterManager().nextRegister();
             int internalRegister = mainEnv.getRegisterManager().nextRegister();
             int loadedFunctionRegister = mainEnv.getRegisterManager().nextRegister();
 
+            // TAJS_load(String file, Boolean isHostEnvironment, String ... parameterNames) -> Function
             ConstantNode sourceStringNode = ConstantNode.makeString(source.toString(), sourceRegister, loaderDummySourceLocation);
             ConstantNode internalFlagNode = ConstantNode.makeBoolean(true, internalRegister, loaderDummySourceLocation);
+
+            
             CallNode callLoadNode = new CallNode(loadedFunctionRegister, TAJSFunctionName.TAJS_LOAD, newList(Arrays.asList(sourceRegister, internalRegister)), loaderDummySourceLocation);
             CallNode callLoadedNode = new CallNode(false, AbstractNode.NO_VALUE, AbstractNode.NO_VALUE, loadedFunctionRegister, newList(), loaderDummySourceLocation);
 

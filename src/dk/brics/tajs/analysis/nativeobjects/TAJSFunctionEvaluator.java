@@ -43,7 +43,7 @@ import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.ObjProperties;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectLabel.Kind;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.lattice.PartitionedValue;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.UnknownValueResolver;
@@ -109,6 +109,7 @@ import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_NODE_PARENT_DIR;
 import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_NODE_REQUIRE_RESOLVE;
 import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_NODE_UNURL;
 import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_NOT_IMPLEMENTED;
+import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_CHECKCTYPE;
 import static dk.brics.tajs.util.Collections.newList;
 import static dk.brics.tajs.util.Collections.newMap;
 import static dk.brics.tajs.util.Collections.newSet;
@@ -224,7 +225,7 @@ public class TAJSFunctionEvaluator {
                         c.getMonitoring().addMessageInfo(c.getNode(), Severity.HIGH, "Calling dumpAttributes with non-constant property name");
                     else {
                         String propertyname = p.getStr();
-                        Value v = c.getAnalysis().getPropVarOperations().readPropertyDirect(x.getObjectLabels(), StringPKey.make(propertyname));
+                        Value v = c.getAnalysis().getPropVarOperations().readPropertyDirect(x.getObjectLabels(), StringPropertyKey.make(propertyname));
                         c.getMonitoring().addMessageInfo(c.getNode(), Severity.HIGH, "Property attributes: " + v.printAttributes() /*+ " (context: " + c.getState().getContext() + ")"*/);
                     }
                 });
@@ -641,6 +642,7 @@ public class TAJSFunctionEvaluator {
                 "Value",
                 "Performs NodeJS require.resolve of the module given as filename",
                 (call, state, pv, c) -> {
+                    // Retrieve filename and parent filename
                     Value filename = FunctionCalls.readParameter(call, state, 0);
                     if (filename.isMaybeFuzzyStr() || filename.isNotStr()) {
                         throw new AnalysisLimitationException.AnalysisPrecisionLimitationException(call.getSourceNode().getSourceLocation() + ": Only constant-string requires supported: " + filename);
@@ -653,6 +655,7 @@ public class TAJSFunctionEvaluator {
                         throw new AnalysisLimitationException.AnalysisPrecisionLimitationException(call.getSourceNode().getSourceLocation() +  ": Only constant-string requires supported: " + parentFilename);
                     }
                     String filenameString = filename.getStr();
+
                     URL resolved;
                     if (Paths.get(filenameString).isAbsolute()) {
                         resolved = PathAndURLUtils.toURL(Paths.get(filenameString)); // trivially resolved
@@ -700,6 +703,23 @@ public class TAJSFunctionEvaluator {
                     }
                     return Value.makeNull();
                 });
+
+        // JSC Code
+        register(implementations, TAJS_CHECKCTYPE, "Value arg, String type", "Check if the type of arg match the requirements of native c code",
+            (call, state, pv, solver) -> {
+                    Value arg = FunctionCalls.readParameter(call, state, 0);
+                    Value ctype = FunctionCalls.readParameter(call, state, 1);
+                    if (!solver.isScanning()) {
+                        return;
+                    }
+                    if (ctype.isMaybeFuzzyStr() || ctype.isNotStr()) {
+                        throw new AnalysisException("Only constant-string TAJS_checkCType supported: " + ctype);
+                    }
+                    CTypeChecker.check(arg, ctype.getStr());
+            }
+        );
+
+
         Set<TAJSFunctionName> missingRegistrations = newSet(Arrays.asList(TAJSFunctionName.values()));
         missingRegistrations.removeAll(implementations.keySet());
         if (!missingRegistrations.isEmpty()) {

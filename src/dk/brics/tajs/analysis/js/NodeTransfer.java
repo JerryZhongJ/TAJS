@@ -67,8 +67,8 @@ import dk.brics.tajs.lattice.MustEquals;
 import dk.brics.tajs.lattice.ObjProperties;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectLabel.Kind;
-import dk.brics.tajs.lattice.PKey.StringPKey;
-import dk.brics.tajs.lattice.PKeys;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
+import dk.brics.tajs.lattice.StringOrSymbol;
 import dk.brics.tajs.lattice.PartitionToken;
 import dk.brics.tajs.lattice.PartitionedValue;
 import dk.brics.tajs.lattice.State;
@@ -362,49 +362,54 @@ public class NodeTransfer implements NodeVisitor {
      * 11.1.2 assignment with right-hand-side identifier reference.
      */
     @Override
-    public void visit(ReadVariableNode n) {
-        String varname = n.getVariableName();
-        Value v;
+    public void visit(ReadVariableNode node) {
+        String varname = node.getVariableName();
+        Value value;
         Set<ObjectLabel> base_objs = null;
         if (varname.equals("this")) {
             // 11.1.1 read 'this' from the execution context
-            v = c.getState().readThis();
-            m.visitReadThis(n, v, c.getState(), InitialStateBuilder.GLOBAL);
+            value = c.getState().readThis();
+            m.visitReadThis(node, value, c.getState(), InitialStateBuilder.GLOBAL);
         } else { // ordinary variable
-            int result_base_reg = n.getResultBaseRegister();
+            int result_base_reg = node.getResultBaseRegister();
             base_objs = newSet();
-            v = pv.readVariable(varname, base_objs);
+            // readVariable have side effect, base_objs now is filled with activatioin objects or global that possibly store the variable in the scope chain.
+            value = pv.readVariable(varname, base_objs);
+
             if (Options.get().isBlendedAnalysisEnabled()) {
-                v = c.getAnalysis().getBlendedAnalysis().getVariableValue(v, n, c.getState());
+                value = c.getAnalysis().getBlendedAnalysis().getVariableValue(value, node, c.getState());
             }
             if (!Options.get().isNoPropNamePartitioning()) {
                 // if varname is a free variable with partitioned value, then refine using the context
-                v = Partitioning.getVariableValueFromPartition(v, c);
+                value = Partitioning.getVariableValueFromPartition(value, c);
             }
-            m.visitPropertyRead(n, base_objs, Value.makeTemporaryStr(varname), c.getState(), true);
-            m.visitVariableAsRead(n, varname, v, c.getState());
-            m.visitVariableOrProperty(n, varname, n.getSourceLocation(), v, c.getState().getContext(), c.getState());
-            if (!n.isKeepAbsent())
-                m.visitReadNonThisVariable(n, v);
-            if (!n.isKeepAbsent() && v.isMaybeAbsent())
-                Exceptions.throwReferenceError(c, v.isMaybePresent());
-            if (!n.isKeepAbsent() && v.isNotPresent() && !Options.get().isPropagateDeadFlow()) {
+
+            m.visitPropertyRead(node, base_objs, Value.makeTemporaryStr(varname), c.getState(), true);
+            m.visitVariableAsRead(node, varname, value, c.getState());
+            m.visitVariableOrProperty(node, varname, node.getSourceLocation(), value, c.getState().getContext(), c.getState());
+
+            if (!node.isKeepAbsent())
+                m.visitReadNonThisVariable(node, value);
+            if (!node.isKeepAbsent() && value.isMaybeAbsent())
+                Exceptions.throwReferenceError(c, value.isMaybePresent());
+            if (!node.isKeepAbsent() && value.isNotPresent() && !Options.get().isPropagateDeadFlow()) {
                 c.getState().setToBottom();
                 return;
             }
             if (result_base_reg != AbstractNode.NO_VALUE)
                 c.getState().writeRegister(result_base_reg, Value.makeObject(base_objs)); // see 10.1.4
-            m.visitRead(n, v, c.getState());
-            m.visitReadVariable(n, v, c.getState()); // TODO: combine some of these m.visitXYZ methods?
+
+            m.visitRead(node, value, c.getState());
+            m.visitReadVariable(node, value, c.getState()); // TODO: combine some of these m.visitXYZ methods?
         }
-        if (!n.isKeepAbsent() && v.isNotPresent() && !Options.get().isPropagateDeadFlow()) {
+        if (!node.isKeepAbsent() && value.isNotPresent() && !Options.get().isPropagateDeadFlow()) {
             c.getState().setToBottom();
             return;
         }
-        if (n.getResultRegister() != AbstractNode.NO_VALUE) {
-            c.getState().writeRegister(n.getResultRegister(), n.isKeepAbsent() ? v : v.restrictToNotAbsent());
-            c.getState().getMustReachingDefs().addReachingDef(n.getResultRegister(), n);
-            c.getState().getMustEquals().addMustEquals(n.getResultRegister(), MustEquals.getSingleton(base_objs), StringPKey.make(varname));
+        if (node.getResultRegister() != AbstractNode.NO_VALUE) {
+            c.getState().writeRegister(node.getResultRegister(), node.isKeepAbsent() ? value : value.restrictToNotAbsent());
+            c.getState().getMustReachingDefs().addReachingDef(node.getResultRegister(), node);
+            c.getState().getMustEquals().addMustEquals(node.getResultRegister(), MustEquals.getSingleton(base_objs), StringPropertyKey.make(varname));
         }
     }
 
@@ -425,12 +430,12 @@ public class NodeTransfer implements NodeVisitor {
         Function f = n.getBlock().getFunction();
         if (f.getParameterNames().contains(n.getVariableName())) { // TODO: review
             ObjectLabel arguments_obj = ObjectLabel.make(f.getEntry().getFirstNode(), Kind.ARGUMENTS);
-            pv.writeProperty(arguments_obj, StringPKey.make(Integer.toString(f.getParameterNames().indexOf(n.getVariableName()))), v);
+            pv.writeProperty(arguments_obj, StringPropertyKey.make(Integer.toString(f.getParameterNames().indexOf(n.getVariableName()))), v);
         }
         m.visitPropertyWrite(n, objsDef.getFirst(), Value.makeTemporaryStr(n.getVariableName()));
         m.visitVariableOrProperty(n, n.getVariableName(), n.getSourceLocation(), v, c.getState().getContext(), c.getState());
         if (objsDef.getSecond())
-            c.getState().getMustEquals().addMustEquals(n.getValueRegister(), MustEquals.getSingleton(objsDef.getFirst()), StringPKey.make(n.getVariableName()));
+            c.getState().getMustEquals().addMustEquals(n.getValueRegister(), MustEquals.getSingleton(objsDef.getFirst()), StringPropertyKey.make(n.getVariableName()));
     }
 
     /**
@@ -476,7 +481,7 @@ public class NodeTransfer implements NodeVisitor {
             return;
         }
         // read the object property value, as fixed property name or unknown property name, and separately for "undefined"/"null"/"NaN"
-        Value v;
+        Value value;
         boolean undefinedCovered = false;
         boolean nullCovered = false;
         boolean nanCovered = false;
@@ -486,9 +491,9 @@ public class NodeTransfer implements NodeVisitor {
             if (c.isScanning())
                 m.visitReadProperty(n, objlabels, propertystr, maybe_undef || maybe_null || maybe_nan, c.getState(), pv.readPropertyWithAttributes(objlabels, propertystr), InitialStateBuilder.GLOBAL);
             if (newBaseVal instanceof PartitionedValue) {
-                v = newBaseVal.applyFunction(baseVal -> PartitionedValue.ignorePartitions(UnknownValueResolver.getRealValue(pv.readPropertyValue(baseVal.getObjectLabels(), propertyname, base_objs), c.getState())));
+                value = newBaseVal.applyFunction(baseVal -> PartitionedValue.ignorePartitions(UnknownValueResolver.getRealValue(pv.readPropertyValue(baseVal.getObjectLabels(), propertyname, base_objs), c.getState())));
             } else {
-                v = pv.readPropertyValue(objlabels, propertyname, base_objs);
+                value = pv.readPropertyValue(objlabels, propertyname, base_objs);
             }
             m.visitPropertyRead(n, objlabels, propertystr, c.getState(), true);
         } else { // fuzzy property name
@@ -499,11 +504,11 @@ public class NodeTransfer implements NodeVisitor {
             }
             if (Options.get().isNoPropNamePartitioning() || !propertystr.isMaybeFuzzyStr() || propertystr.restrictToNotStrOtherNum().restrictToNotStrUInt().isNone()) {
                 // don't use value partitioning (if not enabled, if not fuzzy string, or if only numeric)
-                v = pv.readPropertyValue(objlabels, propertystr, base_objs);
+                value = pv.readPropertyValue(objlabels, propertystr, base_objs);
             } else { // potentially use value partitioning
-                v = Partitioning.partitionPropValue(n, n.getPropertyRegister(), objlabels, originalPropertyVal, propertystr, base_objs, true, c);
-                if (v == null) { // no partitioning performed, fall back to non-partitioned reading
-                    v = pv.readPropertyValue(objlabels, propertystr, base_objs);
+                value = Partitioning.partitionPropValue(n, n.getPropertyRegister(), objlabels, originalPropertyVal, propertystr, base_objs, true, c);
+                if (value == null) { // no partitioning performed, fall back to non-partitioned reading
+                    value = pv.readPropertyValue(objlabels, propertystr, base_objs);
                 } else {
                     undefinedCovered = nullCovered = nanCovered = true; //covered by partitionPropValue
                 }
@@ -512,29 +517,29 @@ public class NodeTransfer implements NodeVisitor {
         if (maybe_undef && !undefinedCovered) {
             if (c.isScanning())
                 m.visitReadProperty(n, objlabels, Value.makeTemporaryStr("undefined"), true, c.getState(), pv.readPropertyWithAttributes(objlabels, propertystr), InitialStateBuilder.GLOBAL);
-            v = UnknownValueResolver.join(v, pv.readPropertyValue(objlabels, "undefined"), c.getState());
+            value = UnknownValueResolver.join(value, pv.readPropertyValue(objlabels, "undefined"), c.getState());
         }
         if (maybe_null && !nullCovered) {
             if (c.isScanning())
                 m.visitReadProperty(n, objlabels, Value.makeTemporaryStr("null"), true, c.getState(), pv.readPropertyWithAttributes(objlabels, propertystr), InitialStateBuilder.GLOBAL);
-            v = UnknownValueResolver.join(v, pv.readPropertyValue(objlabels, "null"), c.getState());
+            value = UnknownValueResolver.join(value, pv.readPropertyValue(objlabels, "null"), c.getState());
         }
         if (maybe_nan && !nanCovered) {
             if (c.isScanning())
                 m.visitReadProperty(n, objlabels, Value.makeTemporaryStr("NaN"), true, c.getState(), pv.readPropertyWithAttributes(objlabels, propertystr), InitialStateBuilder.GLOBAL);
-            v = UnknownValueResolver.join(v, pv.readPropertyValue(objlabels, "NaN"), c.getState());
+            value = UnknownValueResolver.join(value, pv.readPropertyValue(objlabels, "NaN"), c.getState());
         }
         if (Options.get().isBlendedAnalysisEnabled())
-            v = Value.join(c.getAnalysis().getBlendedAnalysis().getValue(v, baseval, originalPropertyVal, n, c.getState()));
-        m.visitVariableOrProperty(n, n.getPropertyString(), n.getSourceLocation(), v, c.getState().getContext(), c.getState());
-        m.visitRead(n, v, c.getState());
-        if (v.isNotPresent() && !Options.get().isPropagateDeadFlow()) {
+            value = Value.join(c.getAnalysis().getBlendedAnalysis().getValue(value, baseval, originalPropertyVal, n, c.getState()));
+        m.visitVariableOrProperty(n, n.getPropertyString(), n.getSourceLocation(), value, c.getState().getContext(), c.getState());
+        m.visitRead(n, value, c.getState());
+        if (value.isNotPresent() && !Options.get().isPropagateDeadFlow()) {
             c.getState().setToBottom();
             return;
         }
         // store the resulting value
         if (n.getResultRegister() != AbstractNode.NO_VALUE) {
-            c.getState().writeRegister(n.getResultRegister(), v);
+            c.getState().writeRegister(n.getResultRegister(), value);
             c.getState().getMustReachingDefs().addReachingDef(n.getResultRegister(), n);
             c.getState().getMustEquals().addMustEquals(n.getResultRegister(), MustEquals.getSingleton(base_objs), MustEquals.getSingleton(propertystr));
         }
@@ -613,11 +618,11 @@ public class NodeTransfer implements NodeVisitor {
                     Value finalPropertystr = propertystr;
                     pt.add(() -> pv.writeProperty(objlabels, finalPropertystr, finalV, false, n.isDecl()));
                 }
-                if (maybe_undef && !propertystr.isMaybeStr("undefined"))
+                if (maybe_undef && !propertystr.isMaybeExactStr("undefined"))
                     pt.add(() -> pv.writeProperty(objlabels, Value.makeTemporaryStr("undefined"), finalV, false, n.isDecl()));
-                if (maybe_null && !propertystr.isMaybeStr("null"))
+                if (maybe_null && !propertystr.isMaybeExactStr("null"))
                     pt.add(() -> pv.writeProperty(objlabels, Value.makeTemporaryStr("null"), finalV, false, n.isDecl()));
-                if (maybe_nan && !propertystr.isMaybeStr("NaN"))
+                if (maybe_nan && !propertystr.isMaybeExactStr("NaN"))
                     pt.add(() -> pv.writeProperty(objlabels, Value.makeTemporaryStr("NaN"), finalV, false, n.isDecl()));
             } else { // using value partitioning
                 Value propertystrall = propertystr;
@@ -663,7 +668,7 @@ public class NodeTransfer implements NodeVisitor {
                 c.getState().setToBottom();
                 return;
             }
-            PKeys propertystr;
+            StringOrSymbol propertystr;
             if (n.isPropertyFixed()) {
                 propertystr = Value.makeStr(n.getPropertyString());
             } else {
@@ -811,9 +816,9 @@ public class NodeTransfer implements NodeVisitor {
                     v = pv.readPropertyValue(singleton, propertyname);
                 } else if (!propertystr.isNotStr() || propertystr.isMaybeSymbol()) {
                     v = pv.readPropertyValue(singleton, propertystr);
-                    read_undefined = propertystr.isMaybeStr("undefined");
-                    read_null = propertystr.isMaybeStr("null");
-                    read_nan = propertystr.isMaybeStr("NaN");
+                    read_undefined = propertystr.isMaybeExactStr("undefined");
+                    read_null = propertystr.isMaybeExactStr("null");
+                    read_nan = propertystr.isMaybeExactStr("NaN");
                 } else
                     v = Value.makeNone();
                 if (maybe_undef && !read_undefined) {

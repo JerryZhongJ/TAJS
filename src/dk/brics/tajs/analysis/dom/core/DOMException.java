@@ -25,7 +25,7 @@ import dk.brics.tajs.analysis.dom.DOMWindow;
 import dk.brics.tajs.flowgraph.AbstractNode;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectLabel.Kind;
-import dk.brics.tajs.lattice.PKey;
+import dk.brics.tajs.lattice.PropertyKey;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.Value;
 import dk.brics.tajs.options.Options;
@@ -71,7 +71,7 @@ public class DOMException {
 
         s.newObject(DOMEXCEPTION);
         s.writeInternalPrototype(DOMEXCEPTION, Value.makeObject(DOMEXCEPTION_PROTOTYPE));
-        pv.writePropertyWithAttributes(DOMEXCEPTION_PROTOTYPE, PKey.SymbolPKey.make(InitialStateBuilder.WELLKNOWN_SYMBOL_TO_STRING_TAG), Value.makeStr("DOMException").setAttributes(true, true, true));
+        pv.writePropertyWithAttributes(DOMEXCEPTION_PROTOTYPE, PropertyKey.SymbolPKey.make(InitialStateBuilder.WELLKNOWN_SYMBOL_TO_STRING_TAG), Value.makeStr("DOMException").setAttributes(true, true, true));
 
         /*
          * Properties.

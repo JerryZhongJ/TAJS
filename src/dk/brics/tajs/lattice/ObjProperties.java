@@ -16,8 +16,8 @@
 
 package dk.brics.tajs.lattice;
 
-import dk.brics.tajs.lattice.PKey.StringPKey;
-import dk.brics.tajs.lattice.PKey.SymbolPKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.SymbolPKey;
 import dk.brics.tajs.options.Options;
 import dk.brics.tajs.util.AnalysisException;
 import dk.brics.tajs.util.Collectors;
@@ -40,13 +40,13 @@ import static dk.brics.tajs.util.Collections.newSet;
  */
 public class ObjProperties {
 
-    private final Map<PKey, Value> properties;
+    private final Map<PropertyKey, Value> properties;
 
     private final Value default_numeric_property;
 
     private final Value default_other_property;
 
-    private final Set<PKey> own_properties;
+    private final Set<PropertyKey> own_properties;
 
     /**
      * Creates a bottom ObjProperties.
@@ -61,7 +61,7 @@ public class ObjProperties {
     /**
      * Creates an ObjProperties with the given properties.
      */
-    private ObjProperties(Value default_numeric_property, Value default_other_property, Map<PKey, Value> properties, Set<PKey> own_properties) {
+    private ObjProperties(Value default_numeric_property, Value default_other_property, Map<PropertyKey, Value> properties, Set<PropertyKey> own_properties) {
         assert default_numeric_property != null;
         assert default_other_property != null;
         assert properties != null;
@@ -76,17 +76,17 @@ public class ObjProperties {
      * Creates an ObjProperties for the selected object (ignoring prototype chain) and query.
      */
     private static ObjProperties makeFromObjectLabel(ObjectLabel l, State s, PropertyQuery flags) {
-        Map<PKey, Value> prop = newMap();
+        Map<PropertyKey, Value> prop = newMap();
         Value numeric_property = UnknownValueResolver.getDefaultNumericProperty(l, s);
         Value other_property = UnknownValueResolver.getDefaultOtherProperty(l, s);
-        Set<PKey> own_properties = newSet(UnknownValueResolver.getProperties(l, s).keySet());
-        for (PKey p : own_properties) {
-            if ((flags.isWithoutProto() && StringPKey.__PROTO__.equals(p)) ||
+        Set<PropertyKey> own_properties = newSet(UnknownValueResolver.getProperties(l, s).keySet());
+        for (PropertyKey p : own_properties) {
+            if ((flags.isWithoutProto() && StringPropertyKey.__PROTO__.equals(p)) ||
                     (!flags.isIncludeSymbols() && p instanceof SymbolPKey) ||
                     (flags.isOnlySymbols() && !(p instanceof SymbolPKey)))
                 continue;
             Value v = UnknownValueResolver.getProperty(l, p, s, false);
-            if (p instanceof StringPKey) {
+            if (p instanceof StringPropertyKey) {
                 if (v.equals(p.isNumeric() ? numeric_property : other_property))
                     continue;
 
@@ -99,12 +99,12 @@ public class ObjProperties {
             if (internalValue.isMaybeSingleStr()) {
                 String str = internalValue.getStr();
                 for (int i = 0; i < str.length(); i++)
-                    prop.put(StringPKey.make(Integer.toString(i)), Value.makeStr(String.valueOf(str.charAt(i))).joinNotDontEnum());
+                    prop.put(StringPropertyKey.make(Integer.toString(i)), Value.makeStr(String.valueOf(str.charAt(i))).joinNotDontEnum());
             }
             if (internalValue.isMaybeStrPrefix()) {
                 String str = internalValue.getPrefix();
                 for (int i = 0; i < internalValue.getPrefix().length(); i++)
-                    prop.put(StringPKey.make(Integer.toString(i)), Value.makeStr(String.valueOf(str.charAt(i))).joinNotDontEnum());
+                    prop.put(StringPropertyKey.make(Integer.toString(i)), Value.makeStr(String.valueOf(str.charAt(i))).joinNotDontEnum());
             }
             if (internalValue.isMaybeFuzzyStr())
                 numeric_property = Value.makeAnyStr().joinNotDontEnum();
@@ -116,8 +116,8 @@ public class ObjProperties {
     /**
      * Materializes the given properties from the defaults.
      */
-    private void materialize(Set<PKey> ps) {
-        for (PKey p : ps) {
+    private void materialize(Set<PropertyKey> ps) {
+        for (PropertyKey p : ps) {
             if (!properties.containsKey(p)) {
                 Value v;
                 if (p.isNumeric())
@@ -138,14 +138,14 @@ public class ObjProperties {
         Value other_property = default_other_property.join(other.default_other_property);
         this.materialize(other.properties.keySet());
         other.materialize(this.properties.keySet());
-        Map<PKey, Value> newP = newMap();
+        Map<PropertyKey, Value> newP = newMap();
         newP.putAll(properties);
-        for (PKey p : this.properties.keySet()) {
+        for (PropertyKey p : this.properties.keySet()) {
             Value thisv = this.properties.get(p);
             Value otherv = other.properties.get(p);
             newP.put(p, thisv.join(otherv));
         }
-        Set<PKey> newO = newSet(this.own_properties);
+        Set<PropertyKey> newO = newSet(this.own_properties);
         newO.addAll(other.own_properties);
         return new ObjProperties(numeric_property, other_property, newP, newO);
     }
@@ -158,8 +158,8 @@ public class ObjProperties {
         Value other_property = Value.join(inheritor.default_other_property, default_other_property);
         this.materialize(inheritor.properties.keySet());
         inheritor.materialize(this.properties.keySet());
-        Map<PKey, Value> newP = newMap();
-        for (PKey k : this.properties.keySet()) {
+        Map<PropertyKey, Value> newP = newMap();
+        for (PropertyKey k : this.properties.keySet()) {
             Value protoValue = this.properties.get(k);
             Value inheritorValue = inheritor.properties.get(k);
             Value finalValue;
@@ -230,7 +230,7 @@ public class ObjProperties {
      * Filter away properties that are not enumerable.
      */
     private ObjProperties filterEnumerableObjectProperties() {
-        Map<PKey, Value> newP = newMap();
+        Map<PropertyKey, Value> newP = newMap();
         properties.forEach((key, value) -> {
             if (value.isMaybeNotDontEnum())
                 newP.put(key, value);
@@ -243,7 +243,7 @@ public class ObjProperties {
     /**
      * Extracts the PKeys that are maybe present (ignoring the defaults).
      */
-    public Set<PKey> getMaybe() {
+    public Set<PropertyKey> getMaybe() {
         return properties.entrySet().stream()
                 .filter(e -> e.getValue().isMaybePresent())
                 .map(Map.Entry::getKey)
@@ -253,7 +253,7 @@ public class ObjProperties {
     /**
      * Extracts the PKeys that are definitely present.
      */
-    public Set<PKey> getDefinitely() {
+    public Set<PropertyKey> getDefinitely() {
         return properties.entrySet().stream()
                 .filter(e -> e.getValue().isNotAbsent())
                 .map(Map.Entry::getKey)
@@ -302,10 +302,10 @@ public class ObjProperties {
     /**
      * Returns the join of the values of the selected properties.
      */
-    public Value getValue(PKeys p) {
+    public Value getValue(StringOrSymbol p) {
         List<Value> vs = newList();
-        for (Map.Entry<PKey,Value> me : properties.entrySet()) {
-            PKey k = me.getKey();
+        for (Map.Entry<PropertyKey,Value> me : properties.entrySet()) {
+            PropertyKey k = me.getKey();
             Value v = me.getValue();
             if (k.isMaybeValue(p))
                 vs.add(v);
@@ -313,14 +313,14 @@ public class ObjProperties {
         boolean add_default_numeric = false; // set to true if some numeric property of p is not in 'properties'
         boolean add_default_other = false; // set to true if some non-numeric property of p is not in 'properties'
         if (p.isMaybeSingleStr()) {
-            if (!properties.containsKey(PKey.StringPKey.make(p.getStr())))
+            if (!properties.containsKey(PropertyKey.StringPropertyKey.make(p.getStr())))
                 if (Strings.isNumeric(p.getStr()))
                     add_default_numeric = true;
                 else
                     add_default_other = true;
         } else if (p.getIncludedStrings() != null) {
             for (String s : p.getIncludedStrings()) {
-                if (!properties.containsKey(PKey.StringPKey.make(s)))
+                if (!properties.containsKey(PropertyKey.StringPropertyKey.make(s)))
                     if (Strings.isNumeric(s))
                         add_default_numeric = true;
                     else
@@ -342,16 +342,16 @@ public class ObjProperties {
     /**
      * Returns all collected property names and values.
      */
-    public Map<PKeys, Value> getProperties() {
-        Map<PKeys, Value> m = newMap();
+    public Map<StringOrSymbol, Value> getProperties() {
+        Map<StringOrSymbol, Value> m = newMap();
         Set<String> numeric = newSet();
         Set<String> other = newSet();
-        for (Map.Entry<PKey, Value> me : properties.entrySet()) {
-            PKey key = me.getKey();
+        for (Map.Entry<PropertyKey, Value> me : properties.entrySet()) {
+            PropertyKey key = me.getKey();
             Value value = me.getValue();
             m.put(key.toValue(), value);
-            if (key instanceof PKey.StringPKey) {
-                String stringkey = ((PKey.StringPKey) key).getStr();
+            if (key instanceof PropertyKey.StringPropertyKey) {
+                String stringkey = ((PropertyKey.StringPropertyKey) key).getStr();
                 if (Strings.isNumeric(stringkey))
                     numeric.add(stringkey);
                 else
@@ -369,7 +369,7 @@ public class ObjProperties {
     public Collection<Value> getGroupedPropertyNames() {
         if (Options.get().isNoStringSets()) {
             // strategy: not using excluded_strings but instead removing the names covered by the defaults
-            Collection<Value> vs = getMaybe().stream().map(PKey::toValue).collect(Collectors.toList());
+            Collection<Value> vs = getMaybe().stream().map(PropertyKey::toValue).collect(Collectors.toList());
             if (default_numeric_property.isMaybePresent()) {
                 vs.add(Value.makeAnyStrNumeric());
                 vs.removeIf(prop -> prop.isMaybeSingleStr() && Strings.isNumeric(prop.getStr())); // no need to include the names that are covered by default_numeric
@@ -385,13 +385,13 @@ public class ObjProperties {
         Set<String> numeric = newSet();
         Set<String> other = newSet();
         Set<Value> inherited = newSet();
-        for (Map.Entry<PKey, Value> me : properties.entrySet()) {
+        for (Map.Entry<PropertyKey, Value> me : properties.entrySet()) {
             Value value = me.getValue();
             if (value.isMaybePresent()) {
-                PKey key = me.getKey();
+                PropertyKey key = me.getKey();
                 boolean own_or_numeric_or_symbol = false;
-                if (key instanceof PKey.StringPKey) {
-                    String stringkey = ((PKey.StringPKey) key).getStr();
+                if (key instanceof PropertyKey.StringPropertyKey) {
+                    String stringkey = ((PropertyKey.StringPropertyKey) key).getStr();
                     if (Strings.isNumeric(stringkey)) {
                         if (!value.equals(default_numeric_property)) {
                             numeric.add(stringkey);

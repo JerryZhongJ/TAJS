@@ -470,7 +470,7 @@ public class TestValue {
         Value stringSet = Value.makeStrings(Stream.of("a", "b", "c").collect(Collectors.toSet()));
         Value stringSetWithAdditionalString = stringSet.joinStr("d");
         assertEquals(4, stringSetWithAdditionalString.getAllKnownStr().size());
-        assertTrue(stringSetWithAdditionalString.isMaybeStr("d"));
+        assertTrue(stringSetWithAdditionalString.isMaybeExactStr("d"));
    }
 
    @Test

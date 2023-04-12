@@ -24,7 +24,7 @@ public interface Num {
     /**
      * Returns true if this value is maybe any number.
      */
-    boolean isMaybeAnyNum();
+    boolean isMaybeNum();
 
     /**
      * Returns true if this value is maybe a singleton number, excluding NaN and +/-Inf.
@@ -74,7 +74,7 @@ public interface Num {
     /**
      * Returns true if the given number is matched by this value.
      */
-    boolean isMaybeNum(double num);
+    boolean isMaybeExactNum(double num);
 
     /**
      * Returns true if this value is maybe any UInt number.

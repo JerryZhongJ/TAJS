@@ -16,8 +16,8 @@
 
 package dk.brics.tajs.analysis.nativeobjects.concrete;
 
-import dk.brics.tajs.lattice.PKey;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.options.Options;
 import dk.brics.tajs.util.AnalysisException;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
@@ -193,8 +193,8 @@ public class NashornConcreteSemantics implements NativeConcreteSemantics {
             }
         }
 
-        Map<PKey, ConcreteValue> extraProperties = newMap();
-        array.keySet().forEach(k -> extraProperties.put(StringPKey.make(k), toConcreteValue(array.getMember(k))));
+        Map<PropertyKey, ConcreteValue> extraProperties = newMap();
+        array.keySet().forEach(k -> extraProperties.put(StringPropertyKey.make(k), toConcreteValue(array.getMember(k))));
         return new ConcreteArray(concreteEntries, extraProperties);
     }
 

@@ -16,8 +16,8 @@
 
 package dk.brics.tajs.analysis.nativeobjects.concrete;
 
-import dk.brics.tajs.lattice.PKey;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 
 import java.util.List;
 import java.util.Map;
@@ -27,21 +27,21 @@ public class ConcreteArray implements ConcreteValue {
 
     private final List<ConcreteValue> array;
 
-    private final Map<PKey, ConcreteValue> extraProperties;
+    private final Map<PropertyKey, ConcreteValue> extraProperties;
 
     /**
      * Creates an array of concrete values, with some extra properties.
      * NB: the extra properties are *not* represented in the toSourceCode result!
      */
-    public ConcreteArray(List<ConcreteValue> array, Map<PKey, ConcreteValue> extraProperties) {
+    public ConcreteArray(List<ConcreteValue> array, Map<PropertyKey, ConcreteValue> extraProperties) {
         this.array = array;
         this.extraProperties = extraProperties;
         for (int i = 0; i < array.size(); i++) {
-            extraProperties.remove(StringPKey.make(i + "")); // kill the numeric properties, to avoid double-representation
+            extraProperties.remove(StringPropertyKey.make(i + "")); // kill the numeric properties, to avoid double-representation
         }
     }
 
-    public Map<PKey, ConcreteValue> getExtraProperties() {
+    public Map<PropertyKey, ConcreteValue> getExtraProperties() {
         return extraProperties;
     }
 

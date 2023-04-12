@@ -58,9 +58,9 @@ import dk.brics.tajs.lattice.HostObject;
 import dk.brics.tajs.lattice.Obj;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectLabel.Kind;
-import dk.brics.tajs.lattice.PKey;
-import dk.brics.tajs.lattice.PKey.StringPKey;
-import dk.brics.tajs.lattice.PKeys;
+import dk.brics.tajs.lattice.PropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
+import dk.brics.tajs.lattice.StringOrSymbol;
 import dk.brics.tajs.lattice.ScopeChain;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.UnknownValueResolver;
@@ -287,11 +287,11 @@ public class AnalysisMonitor implements IAnalysisMonitoring {
     }
 
     private void reportDeadAssignments() {
-        Set<Pair<AbstractNode, PKey>> potentiallyDeadWrites = newSet();
-        Set<Pair<AbstractNode, PKey>> undeadWrites = newSet();
+        Set<Pair<AbstractNode, PropertyKey>> potentiallyDeadWrites = newSet();
+        Set<Pair<AbstractNode, PropertyKey>> undeadWrites = newSet();
         for (Entry<ObjectLabel, ObjReadsWrites> entry : obj_reads_writes.entrySet()) {
             ObjReadsWrites rw = entry.getValue();
-            for (PKey s : rw.getProperties()) {
+            for (PropertyKey s : rw.getProperties()) {
                 // flag if definitely written and definitely not read (excluding 'length' and any-string properties)
                 if (rw.getWriteStatus(s) == W_Status.WRITTEN) {
                     for (AbstractNode definiteWriteLocation : rw.getDefiniteWriteLocations(s)) {
@@ -312,10 +312,10 @@ public class AnalysisMonitor implements IAnalysisMonitoring {
                 }
             }
         }
-        Set<Pair<AbstractNode, PKey>> deadWrites = newSet();
+        Set<Pair<AbstractNode, PropertyKey>> deadWrites = newSet();
         deadWrites.addAll(potentiallyDeadWrites);
         deadWrites.removeAll(undeadWrites);
-        for (Pair<AbstractNode, PKey> deadWrite : deadWrites) {
+        for (Pair<AbstractNode, PropertyKey> deadWrite : deadWrites) {
             String m_s = "Dead assignment, property " + deadWrite.getSecond().toStringEscaped() + " is never read";
             Message m = new Message(deadWrite.getFirst(), Status.CERTAIN, m_s, Severity.MEDIUM, true);
             messages.put(m, m);
@@ -972,7 +972,7 @@ public class AnalysisMonitor implements IAnalysisMonitoring {
      * Checks whether the property read operation accesses an absent property and whether the operation returns null/undefined.
      */
     @Override
-    public void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, PKeys propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj) {
+    public void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, StringOrSymbol propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj) {
         if (!scan_phase) {
             return;
         }
@@ -1019,7 +1019,7 @@ public class AnalysisMonitor implements IAnalysisMonitoring {
      * Properties named 'length' on array objects are ignored.
      */
     @Override
-    public void visitPropertyRead(AbstractNode n, Set<ObjectLabel> objs, PKeys propertyname, State state, boolean check_unknown) {
+    public void visitPropertyRead(AbstractNode n, Set<ObjectLabel> objs, StringOrSymbol propertyname, State state, boolean check_unknown) {
         if (!scan_phase) {
             return;
         }
@@ -1075,14 +1075,14 @@ public class AnalysisMonitor implements IAnalysisMonitoring {
             if (!propertyname.isMaybeSingleStr()) {
                 i.readUnknown();
             } else if (os.size() == 1) {
-                i.readDefinite(StringPKey.make(propertyname.getStr()));
+                i.readDefinite(StringPropertyKey.make(propertyname.getStr()));
             } else {
-                i.readMaybe(StringPKey.make(propertyname.getStr()));
+                i.readMaybe(StringPropertyKey.make(propertyname.getStr()));
             }
         }
     }
 
-    private static boolean checkPropertyNameImpreciseMayInterfereWithBuiltInProperties(PKeys propertyname) {
+    private static boolean checkPropertyNameImpreciseMayInterfereWithBuiltInProperties(StringOrSymbol propertyname) {
         return !propertyname.isMaybeSingleStr() && propertyname.getIncludedStrings() == null &&
                 (propertyname.isMaybeStrIdentifier() || propertyname.isMaybeStrOtherIdentifierParts() ||
                         propertyname.isMaybeStrPrefix() || propertyname.isMaybeStrJSON()); // TODO: more precise pattern of what may interfere?
@@ -1095,7 +1095,7 @@ public class AnalysisMonitor implements IAnalysisMonitoring {
      * Writes to the arguments object are also ignored.
      */
     @Override
-    public void visitPropertyWrite(Node n, Set<ObjectLabel> objs, PKeys propertyname) {
+    public void visitPropertyWrite(Node n, Set<ObjectLabel> objs, StringOrSymbol propertyname) {
         if (!scan_phase) {
             return;
         }
@@ -1131,9 +1131,9 @@ public class AnalysisMonitor implements IAnalysisMonitoring {
             if (!propertyname.isMaybeSingleStr()) {
                 i.writeUnknown(n);
             } else if (objs.size() == 1) {
-                i.writeDefinite(StringPKey.make(propertyname.getStr()), n);
+                i.writeDefinite(StringPropertyKey.make(propertyname.getStr()), n);
             } else {
-                i.writeMaybe(StringPKey.make(propertyname.getStr()));
+                i.writeMaybe(StringPropertyKey.make(propertyname.getStr()));
             }
         }
     }

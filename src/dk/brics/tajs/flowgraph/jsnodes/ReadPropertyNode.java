@@ -27,6 +27,7 @@ import dk.brics.tajs.util.AnalysisException;
  * or<br>
  * <i>v</i><sub><i>result</i></sub> = <i>v</i><sub><i>base</i></sub>[<i>v</i><sub><i>property</i></sub>]<br>
  * <p>
+ * v_result = v_base.property
  * Note that reading a property may overwrite the base register due to ToObject coercion.
  */
 public class ReadPropertyNode extends LoadNode {

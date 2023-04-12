@@ -97,11 +97,11 @@ public class HTMLCanvasElement {
                 arg = Conversion.toString(arg, c);
 
                 Set<String> contextNames = newSet(Arrays.asList("2d", "webgl", "experimental-webgl"));
-                if (arg.isMaybeStr("2d")) {
+                if (arg.isMaybeExactStr("2d")) {
                     results.add(Value.makeObject(CanvasRenderingContext2D.CONTEXT2D));
                 }
 
-                if (arg.isMaybeStr("webgl") || arg.isMaybeStr("experimental-webgl")) {
+                if (arg.isMaybeExactStr("webgl") || arg.isMaybeExactStr("experimental-webgl")) {
                     results.add(Value.makeObject(WebGLRenderingContext.INSTANCES));
                     // not always supported
                     results.add(Value.makeNull());

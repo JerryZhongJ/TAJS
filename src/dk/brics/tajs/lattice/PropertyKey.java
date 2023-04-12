@@ -29,7 +29,7 @@ import java.util.Set;
 /**
  * A fixed property key.
  */
-abstract public class PKey implements DeepImmutable { // XXX: rename class (and other occurrences of "PKey")?
+abstract public class PropertyKey implements DeepImmutable { // XXX: rename class (and other occurrences of "PKey")?
 
     /**
      * Converts this property key to a {@link Value}.
@@ -44,7 +44,7 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
     /**
      * Checks whether this property matches the given value.
      */
-    public abstract boolean isMaybeValue(PKeys v);
+    public abstract boolean isMaybeValue(StringOrSymbol v);
 
     abstract public boolean equals(Object o);
 
@@ -59,9 +59,9 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
      * Returns a property key describing the given singleton property key value.
      * @throws AnalysisException if not a singleton
      */
-    public static PKey make(PKeys singleton_pkeys) {
+    public static PropertyKey make(StringOrSymbol singleton_pkeys) {
         if (singleton_pkeys.isMaybeSingleStr())
-            return StringPKey.make(singleton_pkeys.getStr());
+            return StringPropertyKey.make(singleton_pkeys.getStr());
         Set<ObjectLabel> symbols = singleton_pkeys.getSymbols();
         if (symbols.size() == 1)
             return SymbolPKey.make(symbols.iterator().next());
@@ -74,7 +74,7 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
      * @param oldlabel The object label to replace.
      * @param newlabel The object label to replace oldlabel with.
      */
-    abstract public PKey replaceObjectLabel(ObjectLabel oldlabel, ObjectLabel newlabel);
+    abstract public PropertyKey replaceObjectLabel(ObjectLabel oldlabel, ObjectLabel newlabel);
 
     /**
      * Returns true if this property key contains the given object label.
@@ -84,18 +84,18 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
     /**
      * Constructs a property key as a copy of this value but with object labels renamed.
      */
-    abstract public Set<PKey> rename(Renamings s);
+    abstract public Set<PropertyKey> rename(Renamings s);
 
     /**
      * Property key for fixed string.
      */
-    public static final class StringPKey extends PKey {
+    public static final class StringPropertyKey extends PropertyKey {
 
-        public static PKey __PROTO__;
+        public static PropertyKey __PROTO__;
 
-        public static PKey PROTOTYPE;
+        public static PropertyKey PROTOTYPE;
 
-        public static PKey LENGTH;
+        public static PropertyKey LENGTH;
 
         public static void reset() {
             __PROTO__ = make("__proto__");
@@ -111,7 +111,7 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
 
         private int hashcode;
 
-        private StringPKey(String str) {
+        private StringPropertyKey(String str) {
             this.str = str;
             this.hashcode = str.hashCode() + this.getClass().hashCode();
         }
@@ -119,8 +119,8 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
         /**
          * Constructs a property key for a fixed string property.
          */
-        public static StringPKey make(String str) {
-            return Canonicalizer.get().canonicalize(new StringPKey(str));
+        public static StringPropertyKey make(String str) {
+            return Canonicalizer.get().canonicalize(new StringPropertyKey(str));
         }
 
         @Override
@@ -129,8 +129,8 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
         }
 
         @Override
-        public boolean isMaybeValue(PKeys v) {
-            return v.isMaybeStr(str);
+        public boolean isMaybeValue(StringOrSymbol v) {
+            return v.isMaybeExactStr(str);
         }
 
         /**
@@ -159,7 +159,7 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
         public boolean equals(Object obj) {
             if (!Canonicalizer.get().isCanonicalizing())
                 return this == obj;
-            return obj instanceof StringPKey && getStr().equals(((StringPKey)obj).getStr());
+            return obj instanceof StringPropertyKey && getStr().equals(((StringPropertyKey)obj).getStr());
         }
 
         @Override
@@ -167,7 +167,7 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
             return hashcode;
         }
 
-        public StringPKey replaceObjectLabel(ObjectLabel oldlabel, ObjectLabel newlabel) {
+        public StringPropertyKey replaceObjectLabel(ObjectLabel oldlabel, ObjectLabel newlabel) {
             return this;
         }
 
@@ -175,7 +175,7 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
             return false;
         }
 
-        public Set<PKey> rename(Renamings s) {
+        public Set<PropertyKey> rename(Renamings s) {
             return Collections.singleton(this);
         }
     }
@@ -183,7 +183,7 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
     /**
      * Property key for Symbol.
      */
-    public static final class SymbolPKey extends PKey {
+    public static final class SymbolPKey extends PropertyKey {
 
         private ObjectLabel objlabel;
 
@@ -219,7 +219,7 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
         }
 
         @Override
-        public boolean isMaybeValue(PKeys v) {
+        public boolean isMaybeValue(StringOrSymbol v) {
             return v.getSymbols().contains(objlabel);
         }
 
@@ -253,22 +253,22 @@ abstract public class PKey implements DeepImmutable { // XXX: rename class (and 
             return objlabel.equals(ol);
         }
 
-        public Set<PKey> rename(Renamings s) {
+        public Set<PropertyKey> rename(Renamings s) {
             return s.rename(Collections.singleton(objlabel)).stream().map(SymbolPKey::make).collect(Collectors.toSet());
         }
     }
 
-    public static class Comparator implements java.util.Comparator<PKey> {
+    public static class Comparator implements java.util.Comparator<PropertyKey> {
 
         @Override
-        public int compare(@Nonnull PKey o1, @Nonnull PKey o2) {
-            if (o1 instanceof StringPKey) {
-                if (o2 instanceof StringPKey) {
-                    return ((StringPKey)o1).getStr().compareTo(((StringPKey)o2).getStr());
+        public int compare(@Nonnull PropertyKey o1, @Nonnull PropertyKey o2) {
+            if (o1 instanceof StringPropertyKey) {
+                if (o2 instanceof StringPropertyKey) {
+                    return ((StringPropertyKey)o1).getStr().compareTo(((StringPropertyKey)o2).getStr());
                 } else {
                     return 1;
                 }
-            } else if (o2 instanceof StringPKey) {
+            } else if (o2 instanceof StringPropertyKey) {
                 return -1;
             } else {
                 return ObjectLabel.Comparator.compareStatic(((SymbolPKey)o1).getObjectLabel(), ((SymbolPKey)o2).getObjectLabel());

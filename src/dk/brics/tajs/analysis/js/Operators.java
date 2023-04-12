@@ -101,7 +101,7 @@ public class Operators {
      */
     public static Value uminus(Value v, Solver.SolverInterface c) {
         Value nm = Conversion.toNumber(v, c);
-        if (nm.isMaybeAnyNum()) {
+        if (nm.isMaybeNum()) {
             return nm;
         }
         if (nm.isNotNum()) {
@@ -1015,7 +1015,7 @@ public class Operators {
     }
 
     private static boolean doesSingleStringAndAbstractStringDisagree(Str v1, Str v2) {
-        return v1.isMaybeSingleStr() && !v2.isMaybeStr(v1.getStr());
+        return v1.isMaybeSingleStr() && !v2.isMaybeExactStr(v1.getStr());
     }
 
     private static boolean doesStrUIntAndStrIdentifierDisagree(Str v1, Str v2) {

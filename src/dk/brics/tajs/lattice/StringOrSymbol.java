@@ -21,7 +21,7 @@ import java.util.Set;
 /**
  * 'String or symbol' facet for abstract values.
  */
-public interface PKeys extends Str { // XXX: rename to StrOrSymbol
+public interface StringOrSymbol extends Str { 
 
     /**
      * Returns true if this value may be a symbol.

@@ -19,7 +19,7 @@ package dk.brics.tajs.lattice;
 import dk.brics.tajs.flowgraph.AbstractNode;
 import dk.brics.tajs.flowgraph.BasicBlock;
 import dk.brics.tajs.lattice.ObjectLabel.Kind;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.options.OptionValues;
 import dk.brics.tajs.options.Options;
 import dk.brics.tajs.solver.BlockAndContext;
@@ -989,7 +989,7 @@ public class State implements IState<State, Context, CallEdge> {
             }
         }
         obj_from = state_from.getObject(objlabel_from, false); // propagating defaults may have materialized properties, so get the latest version
-        for (PKey propertyname : obj_from.getProperties().keySet()) {
+        for (PropertyKey propertyname : obj_from.getProperties().keySet()) {
             if (!obj_to.getProperties().containsKey(propertyname)) {
                 Value v = propertyname.isNumeric() ? default_numeric_property_to_original : default_other_property_to_original;
                 if (!obj_to.isWritable())
@@ -999,7 +999,7 @@ public class State implements IState<State, Context, CallEdge> {
 //                  log.debug("Materialized " + objlabel_to + "." + propertyname + " = " + v);
             }
         }
-        for (PKey propertyname : newList(obj_to.getPropertyNames())) { // TODO: need newList (to avoid ConcurrentModificationException)?
+        for (PropertyKey propertyname : newList(obj_to.getPropertyNames())) { // TODO: need newList (to avoid ConcurrentModificationException)?
             Value v_to = obj_to.getProperty(propertyname);
             Value v_from = obj_from.getProperty(propertyname);
             if (modified || !v_to.isUnknown() || !v_from.isUnknown()) {
@@ -1080,7 +1080,7 @@ public class State implements IState<State, Context, CallEdge> {
     /**
      * Returns the set of objects in the prototype chain that contain the property.
      */
-    public Set<ObjectLabel> getPrototypeWithProperty(ObjectLabel objlabel, PKeys propertyName) { // TODO: review -- see PropVarOperations.readPropertyRaw
+    public Set<ObjectLabel> getPrototypeWithProperty(ObjectLabel objlabel, StringOrSymbol propertyName) { // TODO: review -- see PropVarOperations.readPropertyRaw
         if (Options.get().isDebugOrTestEnabled() && propertyName.isMaybeOtherThanStr()) {
             throw new AnalysisException("Uncoerced property name: " + propertyName);
         }
@@ -1103,11 +1103,11 @@ public class State implements IState<State, Context, CallEdge> {
                         }
                         // relevant properties have been materialized now
                         values.addAll(getObject(l, false).getProperties().keySet().stream()
-                                .filter(k -> k instanceof StringPKey && propertyName.isMaybeStr(((StringPKey)k).getStr())) // FIXME: doesn't support Symbols?
+                                .filter(k -> k instanceof StringPropertyKey && propertyName.isMaybeExactStr(((StringPropertyKey)k).getStr())) // FIXME: doesn't support Symbols?
                                 .map(n -> UnknownValueResolver.getProperty(l, n, this, true))
                                 .collect(Collectors.toList()));
                     } else { // FIXME: doesn't support Symbols?
-                        values.add(UnknownValueResolver.getProperty(l, StringPKey.make(propertyName.getStr()), this, true));
+                        values.add(UnknownValueResolver.getProperty(l, StringPropertyKey.make(propertyName.getStr()), this, true));
                     }
 
                     boolean definitelyAbsent = values.stream().allMatch(Value::isNotPresent);
@@ -1194,8 +1194,8 @@ public class State implements IState<State, Context, CallEdge> {
             Value old_other = UnknownValueResolver.getDefaultOtherProperty(objlabel, this);
             obj.setDefaultNumericProperty(old_numeric.joinAbsentModified());
             obj.setDefaultOtherProperty(old_other.joinAbsentModified());
-            for (Map.Entry<PKey, Value> me : newSet(UnknownValueResolver.getProperties(objlabel, this).entrySet())) {
-                PKey propertyname = me.getKey();
+            for (Map.Entry<PropertyKey, Value> me : newSet(UnknownValueResolver.getProperties(objlabel, this).entrySet())) {
+                PropertyKey propertyname = me.getKey();
                 Value v = me.getValue();
                 if (v.isUnknown())
                     v = UnknownValueResolver.getProperty(objlabel, propertyname, this, true);
@@ -1345,7 +1345,7 @@ public class State implements IState<State, Context, CallEdge> {
     public Value readVariableDirect(String var) {
         Collection<Value> values = newList();
         for (ObjectLabel objlabel : execution_context.getVariableObject()) {
-            values.add(readProperty(ObjectProperty.makeOrdinary(objlabel, StringPKey.make(var)), false));
+            values.add(readProperty(ObjectProperty.makeOrdinary(objlabel, StringPropertyKey.make(var)), false));
         }
         return UnknownValueResolver.join(values, this);
     }
@@ -1389,7 +1389,7 @@ public class State implements IState<State, Context, CallEdge> {
             Obj obj = getObject(objlabel, true);
             // FIXME only null or object values are actually written! (see JSObject -> OBJECT_SETPROTOTYPEOF for example) (GitHub #356)
             // FIXME Property.__PROTO__ should be assigned `absent` when `newval.isMaybeNull` (GitHub #356)
-            obj.setProperty(StringPKey.__PROTO__, newval.setAttributes(true, true, false));
+            obj.setProperty(StringPropertyKey.__PROTO__, newval.setAttributes(true, true, false));
             obj.setInternalPrototype(newval); // TODO: redundant, the value is also available as __proto__
         }
         if (log.isDebugEnabled())
@@ -1692,7 +1692,7 @@ public class State implements IState<State, Context, CallEdge> {
             int index = 0;
             Obj obj = store.get(label);
             if (obj != null) {
-                for (Map.Entry<PKey, Value> ee : obj.getProperties().entrySet()) {
+                for (Map.Entry<PropertyKey, Value> ee : obj.getProperties().entrySet()) {
                     s.append("|").append("<f").append(index++).append("> ").append(ee.getKey()).append("=").append(esc(ee.getValue().restrictToNotObject().toString()));
                 }
                 if (!obj.getDefaultNumericProperty().isUnknown()) {
@@ -1722,7 +1722,7 @@ public class State implements IState<State, Context, CallEdge> {
             ObjectLabel sourceLabel = e.getKey();
             Obj obj = e.getValue();
             int index = 0;
-            for (Map.Entry<PKey, Value> ee : obj.getProperties().entrySet()) {
+            for (Map.Entry<PropertyKey, Value> ee : obj.getProperties().entrySet()) {
                 Value value = ee.getValue();
                 String source = node(sourceLabel) + ":f" + index;
                 for (ObjectLabel targetLabel : value.getObjectLabels()) {
@@ -2217,7 +2217,7 @@ public class State implements IState<State, Context, CallEdge> {
         for (ObjectLabel lab : store.keySet()) {
             Obj obj = getObject(lab, false);
 
-            for (PKey propertyname : newList(obj.getPropertyNames())) { // TODO: need newList (to avoid ConcurrentModificationException)?
+            for (PropertyKey propertyname : newList(obj.getPropertyNames())) { // TODO: need newList (to avoid ConcurrentModificationException)?
                 Value v = obj.getProperty(propertyname);
                 if (!v.isUnknown()) {
                     Value new_v_to = func.apply(v);

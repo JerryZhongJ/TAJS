@@ -41,7 +41,7 @@ import static dk.brics.tajs.util.Collections.newSet;
 /**
  * Partitioned abstract value.
  */
-public final class PartitionedValue extends Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable {
+public final class PartitionedValue extends Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepImmutable {
 
     /**
      * Partitioning of the abstract value.

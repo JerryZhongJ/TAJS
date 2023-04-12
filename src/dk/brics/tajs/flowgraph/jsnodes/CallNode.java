@@ -53,7 +53,12 @@ public class CallNode extends LoadNode {
 
     private boolean constructor;
 
-    private int base_reg; // NO_VALUE if absent (i.e. implicitly the global object, used for arraylits and regular expressions)
+    /*
+     * Representing what object this function is accessed on when called, namely `this`.
+     * NO_VALUE if absent, which will be substituted with the global object.
+     * Read https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this#description
+     */
+    private int base_reg; 
 
     private int function_reg = NO_VALUE; // NO_VALUE if property_reg or property_str is used instead
 

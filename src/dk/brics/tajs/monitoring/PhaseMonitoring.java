@@ -28,7 +28,7 @@ import dk.brics.tajs.flowgraph.jsnodes.ReadVariableNode;
 import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.HostObject;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKeys;
+import dk.brics.tajs.lattice.StringOrSymbol;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.Value;
 import dk.brics.tajs.solver.BlockAndContext;
@@ -182,12 +182,12 @@ public class PhaseMonitoring<PreScanMonitorType extends IAnalysisMonitoring, Sca
     }
 
     @Override
-    public void visitPropertyRead(AbstractNode n, Set<ObjectLabel> objs, PKeys propertyname, State state, boolean check_unknown) {
+    public void visitPropertyRead(AbstractNode n, Set<ObjectLabel> objs, StringOrSymbol propertyname, State state, boolean check_unknown) {
         activeMonitor.visitPropertyRead(n, objs, propertyname, state, check_unknown);
     }
 
     @Override
-    public void visitPropertyWrite(Node n, Set<ObjectLabel> objs, PKeys propertyname) {
+    public void visitPropertyWrite(Node n, Set<ObjectLabel> objs, StringOrSymbol propertyname) {
         activeMonitor.visitPropertyWrite(n, objs, propertyname);
     }
 
@@ -202,7 +202,7 @@ public class PhaseMonitoring<PreScanMonitorType extends IAnalysisMonitoring, Sca
     }
 
     @Override
-    public void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, PKeys propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj) {
+    public void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, StringOrSymbol propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj) {
         activeMonitor.visitReadProperty(n, objlabels, propertyname, maybe, state, v, global_obj);
     }
 

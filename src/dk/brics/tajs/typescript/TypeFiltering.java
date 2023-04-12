@@ -31,7 +31,7 @@ import dk.brics.tajs.analysis.Solver;
 import dk.brics.tajs.analysis.js.Filtering;
 import dk.brics.tajs.lattice.FunctionTypeSignatures;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKey;
+import dk.brics.tajs.lattice.PropertyKey;
 import dk.brics.tajs.lattice.Restriction;
 import dk.brics.tajs.lattice.UnknownValueResolver;
 import dk.brics.tajs.lattice.Value;
@@ -78,7 +78,7 @@ public class TypeFiltering {
             if (module.isMaybePrimitive()) {
                 log.info("Expected abstract object as module, was " + module);
             }
-            assumeObjectPropertyHasType(module.getObjectLabels(), PKey.StringPKey.make("exports"), t, newSet());
+            assumeObjectPropertyHasType(module.getObjectLabels(), PropertyKey.StringPropertyKey.make("exports"), t, newSet());
         }
     }
 
@@ -225,33 +225,34 @@ public class TypeFiltering {
     /**
      * Assumes that that the given object property has the given type.
      */
-    private void assumeObjectPropertyHasType(Set<ObjectLabel> baseobjs, PKey propname, Type t, Set<Triple<Set<ObjectLabel>, PKey, Type>> visited) {
-        Triple<Set<ObjectLabel>, PKey, Type> p = Triple.make(baseobjs, propname, t);
+    private void assumeObjectPropertyHasType(Set<ObjectLabel> baseobjs, PropertyKey propname, Type type, Set<Triple<Set<ObjectLabel>, PropertyKey, Type>> visited) {
+        Triple<Set<ObjectLabel>, PropertyKey, Type> p = Triple.make(baseobjs, propname, type);
         if (visited.contains(p))
             return;
         visited.add(p);
-        t = transformInterfaceTypeToSimpleType(t);
+
+        type = transformInterfaceTypeToSimpleType(type);
         if (log.isDebugEnabled())
-            log.debug("Type filtering object property " + baseobjs + "." + propname + " with " + t);
-        Object r = t.accept(new DefaultTypeVisitor<Object>() {
+            log.debug("Type filtering object property " + baseobjs + "." + propname + " with " + type);
+        Object r = type.accept(new DefaultTypeVisitor<Object>() {
 
             @Override
-            public Object visit(InterfaceType t) {
-                filtering.assumeObjectPropertySatisfies(baseobjs, propname, objectTypeToRestriction(t, t.getDeclaredCallSignatures(), t.getDeclaredConstructSignatures()));
-                if (!t.getDeclaredProperties().isEmpty() && ObjectLabel.allowStrongUpdate(baseobjs)) { // the object must have the properties described by t.declaredProperties
+            public Object visit(InterfaceType type) {
+                filtering.assumeObjectPropertySatisfies(baseobjs, propname, objectTypeToRestriction(type, type.getDeclaredCallSignatures(), type.getDeclaredConstructSignatures()));
+                if (!type.getDeclaredProperties().isEmpty() && ObjectLabel.allowStrongUpdate(baseobjs)) { // the object must have the properties described by t.declaredProperties
                     Value v = pv.readPropertyWithAttributes(baseobjs, propname.toValue());
                     v = UnknownValueResolver.getRealValue(v, c.getState());
-                    for (Map.Entry<String, Type> propType : t.getDeclaredProperties().entrySet())
-                        assumeObjectPropertyHasType(v.getObjectLabels(), PKey.StringPKey.make(propType.getKey()), propType.getValue(), visited);
+                    for (Map.Entry<String, Type> propType : type.getDeclaredProperties().entrySet())
+                        assumeObjectPropertyHasType(v.getObjectLabels(), PropertyKey.StringPropertyKey.make(propType.getKey()), propType.getValue(), visited);
                 }
-                for (Type bt : t.getBaseTypes()) // also restrict using the base types
+                for (Type bt : type.getBaseTypes()) // also restrict using the base types
                     assumeObjectPropertyHasType(baseobjs, propname, bt, visited);
                 return true;
             }
 
             @Override
-            public Object visit(IntersectionType t) {
-                for (Type t2 : t.getElements())
+            public Object visit(IntersectionType type) {
+                for (Type t2 : type.getElements())
                     assumeObjectPropertyHasType(baseobjs, propname, t2, visited);
                 return true;
             }
@@ -261,8 +262,8 @@ public class TypeFiltering {
                 return filtering.assumeObjectPropertySatisfies(baseobjs, propname, primitiveTypeToRestriction(t));
             }
         });
-        if (r == null && !isAny(t))
-            log.debug("No object property type filtering implemented for " + t); // TODO: TupleType, AnonymousType, ClassType, GenericType, ReferenceType, TypeParameterType, ClassInstanceType, ThisType, IndexType, IndexedAccessType? (see also assumeValueHasType)
+        if (r == null && !isAny(type))
+            log.debug("No object property type filtering implemented for " + type); // TODO: TupleType, AnonymousType, ClassType, GenericType, ReferenceType, TypeParameterType, ClassInstanceType, ThisType, IndexType, IndexedAccessType? (see also assumeValueHasType)
     }
 
     private boolean isAny(Type t) {
@@ -288,7 +289,7 @@ public class TypeFiltering {
                 Set<ObjectLabel> baseobjs = res.getObjectLabels();
                 if (!t.getDeclaredProperties().isEmpty() && ObjectLabel.allowStrongUpdate(baseobjs)) // the object must have the properties described by t.declaredProperties
                     for (Map.Entry<String, Type> propType : t.getDeclaredProperties().entrySet())
-                        assumeObjectPropertyHasType(baseobjs, PKey.StringPKey.make(propType.getKey()), propType.getValue(), newSet());
+                        assumeObjectPropertyHasType(baseobjs, PropertyKey.StringPropertyKey.make(propType.getKey()), propType.getValue(), newSet());
                 for (Type bt : t.getBaseTypes()) // also restrict using the base types
                     res = assumeValueHasType(res, bt, visited);
                 return res;

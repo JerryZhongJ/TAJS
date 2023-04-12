@@ -142,7 +142,7 @@ public class TestStr { // TODO: coverage of Str operations?
         checkAntiMonotone(v1, v2, Value::isNotStr);
         for (String s : strings) {
             lastparam = s;
-            checkMonotone(v1, v2, w -> w.isMaybeStr(s));
+            checkMonotone(v1, v2, w -> w.isMaybeExactStr(s));
         }
 // FIXME
 //        for (Value v3 : values) {

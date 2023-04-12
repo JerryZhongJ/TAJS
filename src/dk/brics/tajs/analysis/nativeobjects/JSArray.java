@@ -33,7 +33,7 @@ import dk.brics.tajs.lattice.Bool;
 import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectLabel.Kind;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.lattice.Renamings;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.UnknownValueResolver;
@@ -340,11 +340,11 @@ public class JSArray {
                         if (near_start.isNotPresent())
                             pv.deleteProperty(thisobj, Value.makeStr(s2), false);
                         else if (near_start.isMaybePresent())
-                            pv.writePropertyWithAttributes(thisobj, StringPKey.make(s2), near_start);
+                            pv.writePropertyWithAttributes(thisobj, StringPropertyKey.make(s2), near_start);
                         if (near_end.isNotPresent())
                             pv.deleteProperty(thisobj, Value.makeStr(s1), false);
                         else if (near_end.isMaybePresent())
-                            pv.writePropertyWithAttributes(thisobj, StringPKey.make(s1), near_end);
+                            pv.writePropertyWithAttributes(thisobj, StringPropertyKey.make(s1), near_end);
                     }
                 } else {
                     Value v = pv.readPropertyWithAttributes(thisobj, Value.makeAnyStrUInt());

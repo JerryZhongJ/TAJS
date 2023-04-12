@@ -288,6 +288,9 @@ public class OptionValues {
     @Option(name = "-no-error-capture-stack-trace-polyfill", usage = "Disable the use of Error.captureStackTrace polyfill")
     private boolean noErrorCaptureStackTracePolyfill;
 
+    @Option(name = "-nodejs-c-summary", usage = "Enable -nodejs with the path of c summaries. The default path is './c-summaries/'")
+    private String cSummaryPath;
+
     @Argument
     private List<Path> arguments = new ArrayList<>();
 
@@ -1303,7 +1306,7 @@ public class OptionValues {
     }
 
     public boolean isNodeJS() {
-        return nodejs;
+        return nodejs || isCSummaryEnabled();
     }
 
     public void enableNodeJS() {
@@ -1424,5 +1427,13 @@ public class OptionValues {
 
     public boolean isNoErrorCaptureStackTracePolyfillEnabled() {
         return noErrorCaptureStackTracePolyfill;
+    }
+
+    public boolean isCSummaryEnabled() {
+        return cSummaryPath != null;
+    }
+
+    public String getCSummaryPath() {
+        return cSummaryPath;
     }
 }

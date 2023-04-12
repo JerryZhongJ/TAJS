@@ -28,7 +28,7 @@ import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.HostObject;
 import dk.brics.tajs.lattice.ILatticeMonitoring;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKeys;
+import dk.brics.tajs.lattice.StringOrSymbol;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.Value;
 import dk.brics.tajs.solver.Message.Severity;
@@ -162,7 +162,7 @@ public interface IAnalysisMonitoring extends ILatticeMonitoring {
      * @param propertyname  description of the property name
      * @param check_unknown if set, warn about reads from unknown properties
      */
-    void visitPropertyRead(AbstractNode n, Set<ObjectLabel> objs, PKeys propertyname, State state, boolean check_unknown);
+    void visitPropertyRead(AbstractNode n, Set<ObjectLabel> objs, StringOrSymbol propertyname, State state, boolean check_unknown);
 
     /**
      * Invoked when a property write operation occurs.
@@ -171,7 +171,7 @@ public interface IAnalysisMonitoring extends ILatticeMonitoring {
      * @param objs         the objects being written to
      * @param propertyname description of the property name
      */
-    void visitPropertyWrite(Node n, Set<ObjectLabel> objs, PKeys propertyname);
+    void visitPropertyWrite(Node n, Set<ObjectLabel> objs, StringOrSymbol propertyname);
 
     /**
      * Invoked when a variable or property read operation occurs.
@@ -197,7 +197,7 @@ public interface IAnalysisMonitoring extends ILatticeMonitoring {
      * @param v            property value with attributes
      * @param global_obj   the global object
      */
-    void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, PKeys propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj); // TODO these checks should be done for CallNodes as well!
+    void visitReadProperty(ReadPropertyNode n, Set<ObjectLabel> objlabels, StringOrSymbol propertyname, boolean maybe, State state, Value v, ObjectLabel global_obj); // TODO these checks should be done for CallNodes as well!
     // TODO: we have both visitReadProperty and visitPropertyRead - merge them, or give them better names?
 
     /**

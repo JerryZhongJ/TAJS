@@ -39,8 +39,8 @@ import dk.brics.tajs.lattice.Obj;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectLabel.Kind;
 import dk.brics.tajs.lattice.ObjectProperty;
-import dk.brics.tajs.lattice.PKey;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.lattice.PartitionedValue;
 import dk.brics.tajs.lattice.Renamings;
 import dk.brics.tajs.lattice.ScopeChain;
@@ -184,7 +184,7 @@ public class UserFunctionCalls {
         State caller_state = c.getState();
         PropVarOperations pv = c.getAnalysis().getPropVarOperations();
         ScopeChain obj_f_sc = caller_state.readObjectScope(obj_f);
-        Value prototype = pv.readPropertyDirect(Collections.singleton(obj_f), StringPKey.PROTOTYPE);
+        Value prototype = pv.readPropertyDirect(Collections.singleton(obj_f), StringPropertyKey.PROTOTYPE);
         if (obj_f_sc == null || prototype.isNone())
             return; // must be spurious dataflow
 
@@ -269,7 +269,7 @@ public class UserFunctionCalls {
                 if (v.isNone()) // can happen because of type filtering and blended analysis
                     return;
                 Value renamed = v.rename(extra_renamings);
-                pv.writeProperty(argobj, StringPKey.make(Integer.toString(i)), renamed); // from ES5 Annex E: "In Edition 5 the array indexed properties of argument objects that correspond to actual formal parameters are enumerable. In Edition 3, such properties were not enumerable."
+                pv.writeProperty(argobj, StringPropertyKey.make(Integer.toString(i)), renamed); // from ES5 Annex E: "In Edition 5 the array indexed properties of argument objects that correspond to actual formal parameters are enumerable. In Edition 3, such properties were not enumerable."
                 if (i < f.getParameterNames().size()) {
                     if (renamed.isMaybeAbsent())
                         renamed = renamed.restrictToNotAbsent().joinUndef(); // convert absent to undefined
@@ -544,8 +544,8 @@ public class UserFunctionCalls {
                                                  State calledge_state,
                                                  State caller_entry_state,
                                                  State return_state) {
-        Map<PKey, Value> newproperties = newMap();
-        for (Map.Entry<PKey, Value> me : obj.getProperties().entrySet()) {
+        Map<PropertyKey, Value> newproperties = newMap();
+        for (Map.Entry<PropertyKey, Value> me : obj.getProperties().entrySet()) {
             Value v = me.getValue();
             v = replacePolymorphicValue(v, calledge_state, caller_entry_state, return_state);
             newproperties.put(me.getKey(), v);

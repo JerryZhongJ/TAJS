@@ -550,7 +550,7 @@ public final class UnknownValueResolver {
                 dst_v = dst_v.makeNonPolymorphic();
             }
             if (r == Kind.DEFAULT_NUMERIC || r == Kind.DEFAULT_OTHER)
-                for (PKey p : src_obj.getPropertyNames())
+                for (PropertyKey p : src_obj.getPropertyNames())
                     if (p.isNumeric() == (r == Kind.DEFAULT_NUMERIC) && !dst_obj.getProperties().containsKey(p)) {
                         if (log.isDebugEnabled())
                             log.debug("materialized property " + p);
@@ -604,10 +604,10 @@ public final class UnknownValueResolver {
     }
 
     /**
-     * Wrapper for {@link Obj#getProperty(PKey)}.
+     * Wrapper for {@link Obj#getProperty(PropertyKey)}.
      * Never returns 'unknown'.
      */
-    public static Value getProperty(ObjectLabel objlabel, PKey propertyname, State s, boolean partial) {
+    public static Value getProperty(ObjectLabel objlabel, PropertyKey propertyname, State s, boolean partial) {
         Value res = s.getObject(objlabel, false).getProperty(propertyname);
         if (!isValueOK(res, partial)) {
             res = recover(s, ObjectProperty.makeOrdinary(objlabel, propertyname),
@@ -722,7 +722,7 @@ public final class UnknownValueResolver {
      * The resulting map may contain 'unknown' and polymorphic values, but all property names will be present.
      * The map is not writable.
      */
-    public static Map<PKey, Value> getProperties(ObjectLabel objlabel, State s) {
+    public static Map<PropertyKey, Value> getProperties(ObjectLabel objlabel, State s) {
         Obj obj = s.getObject(objlabel, false);
         if (obj.getDefaultNumericProperty().isUnknown() || obj.getDefaultOtherProperty().isUnknown()) {
             if (obj.getDefaultNumericProperty().isUnknown())

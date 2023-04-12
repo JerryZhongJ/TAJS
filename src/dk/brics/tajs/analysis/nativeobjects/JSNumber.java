@@ -78,7 +78,7 @@ public class JSNumber {
                     if (num.isMaybeNaN() || num.isMaybeInf()) {
                         result = result.joinBool(false);
                     }
-                    if (num.isMaybeAnyNum() || num.isMaybeNumUInt() || num.isMaybeSingleNum() || num.isMaybeNumOther()) {
+                    if (num.isMaybeNum() || num.isMaybeNumUInt() || num.isMaybeSingleNum() || num.isMaybeNumOther()) {
                         result = result.joinBool(true);
                     }
                 }

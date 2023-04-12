@@ -32,8 +32,8 @@ import dk.brics.tajs.lattice.FunctionPartitions;
 import dk.brics.tajs.lattice.MustEquals;
 import dk.brics.tajs.lattice.ObjProperties;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKey;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.lattice.PartitionToken;
 import dk.brics.tajs.lattice.PartitionedValue;
 import dk.brics.tajs.lattice.PartitioningInfo;
@@ -175,25 +175,25 @@ public class Partitioning {
         if (usePrototypes)
             propertyQuery = propertyQuery.usePrototypes();
         ObjProperties properties = c.getState().getProperties(objlabels, propertyQuery);
-        Set<PKey> pkeyProperties = properties.getMaybe().stream().filter(pkey -> pkey.isMaybeValue(propertystr)).collect(Collectors.toSet()); // finds all maybe-present properties (including prototype chain) that may match propertystr
-        Set<String> pkeyPropertyStrings = pkeyProperties.stream().filter(pkey -> pkey instanceof PKey.StringPKey).map(pkey -> pkey.toValue().getStr()).collect(Collectors.toSet());
+        Set<PropertyKey> pkeyProperties = properties.getMaybe().stream().filter(pkey -> pkey.isMaybeValue(propertystr)).collect(Collectors.toSet()); // finds all maybe-present properties (including prototype chain) that may match propertystr
+        Set<String> pkeyPropertyStrings = pkeyProperties.stream().filter(pkey -> pkey instanceof PropertyKey.StringPropertyKey).map(pkey -> pkey.toValue().getStr()).collect(Collectors.toSet());
         Consumer<Property> addPartitionTokenForProperty = p -> partitions.add(PartitionToken.PropertyNamePartitionToken.make(partitionNode, p));
         if (propertyval.isMaybeAllKnownStr())
-            pkeyProperties.addAll(propertyval.getAllKnownStr().stream().map(StringPKey::make).collect(Collectors.toSet()));
+            pkeyProperties.addAll(propertyval.getAllKnownStr().stream().map(StringPropertyKey::make).collect(Collectors.toSet()));
         pkeyProperties.forEach(p -> addPartitionTokenForProperty.accept(Property.makeOrdinaryProperty(p))); // adds partition tokens for ordinary properties
         if (partitions.isEmpty()) {
             return null;
         }
         if (propertyval.isMaybeUndef()) {
-            addPartitionTokenForProperty.accept(Property.makeOrdinaryProperty(PKey.make(Value.makeStr("undefined"))));
+            addPartitionTokenForProperty.accept(Property.makeOrdinaryProperty(PropertyKey.make(Value.makeStr("undefined"))));
             pkeyPropertyStrings.add("undefined");
         }
         if (propertyval.isMaybeNull()) {
-            addPartitionTokenForProperty.accept(Property.makeOrdinaryProperty(PKey.make(Value.makeStr("null"))));
+            addPartitionTokenForProperty.accept(Property.makeOrdinaryProperty(PropertyKey.make(Value.makeStr("null"))));
             pkeyPropertyStrings.add("null");
         }
         if (propertyval.isMaybeNaN()) {
-            addPartitionTokenForProperty.accept(Property.makeOrdinaryProperty(PKey.make(Value.makeStr("NaN"))));
+            addPartitionTokenForProperty.accept(Property.makeOrdinaryProperty(PropertyKey.make(Value.makeStr("NaN"))));
             pkeyPropertyStrings.add("NaN");
         }
         Value other = propertystr.restrictToNotStrings(pkeyPropertyStrings); // values of propertystr that are not covered already
@@ -218,9 +218,9 @@ public class Partitioning {
                             if (prop.getPropertyName().isMaybeValue(propertyvalWithoutPartitions))
                                 vs.add(propName);
                             // include non-string primitive values?
-                            if (prop.getPropertyName() instanceof PKey.StringPKey) {
-                                String s = ((PKey.StringPKey)prop.getPropertyName()).getStr();
-                                if (Strings.isNumeric(s) && propertyvalWithoutPartitions.isMaybeNum(Double.parseDouble(s)))
+                            if (prop.getPropertyName() instanceof PropertyKey.StringPropertyKey) {
+                                String s = ((PropertyKey.StringPropertyKey)prop.getPropertyName()).getStr();
+                                if (Strings.isNumeric(s) && propertyvalWithoutPartitions.isMaybeExactNum(Double.parseDouble(s)))
                                     vs.add(Value.makeNum(Double.parseDouble(s)));
                                 if (s.equals("true") && propertyvalWithoutPartitions.isMaybeTrue())
                                     vs.add(Value.makeBool(true));
@@ -428,7 +428,7 @@ public class Partitioning {
                                                 q -> Value.makeObject(fn).setFunctionPartitions(FunctionPartitions.make(transformToken.apply(q)).join(inheritingFunctionPartitions))))));
 
                 newPartitionsForVariables.forEach((key, value) -> c.getAnalysis().getPropVarOperations().writePropertyWithAttributes(c.getState().getExecutionContext().getVariableObject(),
-                        StringPKey.make(key),
+                        StringPropertyKey.make(key),
                         PartitionedValue.make(n, newPartitionsForVariables.get(key))));
 
                 if (REPORT_USAGE) { // TODO: move to monitoring?
@@ -447,7 +447,7 @@ public class Partitioning {
             if (!unpartitionedFreeVariables.isEmpty()) {
                 PartitionToken.FunctionPartitionToken q = PartitionToken.FunctionPartitionToken.makeAnyToken(n, c.getState().getContext());
                 unpartitionedFreeVariables.forEach((key, value) -> c.getAnalysis().getPropVarOperations().writePropertyWithAttributes(c.getState().getExecutionContext().getVariableObject(),
-                        StringPKey.make(key),
+                        StringPropertyKey.make(key),
                         PartitionedValue.make(n, mapOf(q, value))));
                 if (REPORT_USAGE) { // TODO: move to monitoring?
                     if (!log.isDebugEnabled() && log.isInfoEnabled())

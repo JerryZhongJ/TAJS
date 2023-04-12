@@ -25,7 +25,7 @@ import dk.brics.tajs.flowgraph.jsnodes.CallNode;
 import dk.brics.tajs.flowgraph.jsnodes.UnaryOperatorNode;
 import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.ObjectProperty;
-import dk.brics.tajs.lattice.PKey;
+import dk.brics.tajs.lattice.PropertyKey;
 import dk.brics.tajs.lattice.PartitionedValue;
 import dk.brics.tajs.lattice.Restriction;
 import dk.brics.tajs.lattice.UnknownValueResolver;
@@ -94,7 +94,7 @@ public class Filtering {
     /**
      * Restricts the value of the register that are equal to the given memory location.
      */
-    private boolean assumeRegistersEqualToSatisfy(ObjectLabel objlabel, PKey pkey, Restriction restriction, Visited visited) {
+    private boolean assumeRegistersEqualToSatisfy(ObjectLabel objlabel, PropertyKey pkey, Restriction restriction, Visited visited) {
         for (int reg : c.getState().getMustEquals().getMustEquals(objlabel, pkey))
             if (assume(reg, restriction, visited))
                 return true;
@@ -105,7 +105,7 @@ public class Filtering {
      * Restricts the value of the given object property.
      * Accesses the object directly, without using the prototype chain.
      */
-    private boolean assumeObjectPropertySatisfies(ObjectLabel objlabel, PKey pkey, Restriction restriction, Visited visited) {
+    private boolean assumeObjectPropertySatisfies(ObjectLabel objlabel, PropertyKey pkey, Restriction restriction, Visited visited) {
         if (!objlabel.isSingleton())
             throw new AnalysisException("Expected singleton object label");
         if (assumeRegistersEqualToSatisfy(objlabel, pkey, restriction, visited))
@@ -123,28 +123,28 @@ public class Filtering {
      * The null restriction is ignored.
      * @return the restriction given as argument
      */
-    public Restriction assumeObjectPropertySatisfies(Set<ObjectLabel> baseobjs, PKey propname, Restriction restriction) {
+    public Restriction assumeObjectPropertySatisfies(Set<ObjectLabel> baseobjs, PropertyKey propname, Restriction restriction) {
         if (restriction != null)
             assumeObjectPropertySatisfies(baseobjs, propname, restriction, new Visited());
         return restriction;
     }
 
     /**
-     * Variant of {@link #assumeObjectPropertySatisfies(ObjectLabel, PKey, Restriction, Visited)} that uses the prototype chain.
+     * Variant of {@link #assumeObjectPropertySatisfies(ObjectLabel, PropertyKey, Restriction, Visited)} that uses the prototype chain.
      * (This method is only needed for call nodes where the function is given as a property read.)
      */
-    private boolean assumeObjectPropertySatisfies(Set<ObjectLabel> baseobjs, PKey propname, Restriction restriction, Visited visited) {
-        Pair<Set<ObjectLabel>, Value> p = pv.readPropertyWithAttributesAndObjs(baseobjs, propname);
-        Set<ObjectLabel> objs = p.getFirst();
-        Value v = p.getSecond();
+    private boolean assumeObjectPropertySatisfies(Set<ObjectLabel> baseobjs, PropertyKey propname, Restriction restriction, Visited visited) {
+        Pair<Set<ObjectLabel>, Value> pair = pv.readPropertyWithAttributesAndObjs(baseobjs, propname);
+        Set<ObjectLabel> objs = pair.getFirst();
+        Value value = pair.getSecond();
         if (ObjectLabel.allowStrongUpdate(objs)) {
-            v = UnknownValueResolver.getRealValue(v, c.getState());
-            Value oldv = v;
-            v = restriction.restrict(v);
-            if (v != oldv) {
+            value = UnknownValueResolver.getRealValue(value, c.getState());
+            Value oldv = value;
+            value = restriction.restrict(value);
+            if (value != oldv) {
                 if (log.isDebugEnabled())
-                    log.debug("Restricting object property " + objs + "." + propname + " from " + oldv + " to " + v + " (at " + c.getNode().getSourceLocation() + ")");
-                pv.writePropertyWithAttributes(objs, propname, v, false, true);
+                    log.debug("Restricting object property " + objs + "." + propname + " from " + oldv + " to " + value + " (at " + c.getNode().getSourceLocation() + ")");
+                pv.writePropertyWithAttributes(objs, propname, value, false, true);
             }
             if (assumeRegistersEqualToSatisfy(objs.iterator().next(), propname, restriction, visited))
                 return true;
@@ -347,7 +347,7 @@ public class Filtering {
     public boolean assumeFunction(Set<ObjectLabel> baseobjs, String propname) {
         if (propname == null || Options.get().isNoFilteringEnabled() || Options.get().isControlSensitivityDisabled())
             return false;
-        return assumeObjectPropertySatisfies(baseobjs, PKey.StringPKey.make(propname), new Restriction(Restriction.Kind.FUNCTION), new Visited());
+        return assumeObjectPropertySatisfies(baseobjs, PropertyKey.StringPropertyKey.make(propname), new Restriction(Restriction.Kind.FUNCTION), new Visited());
     }
 
     /**

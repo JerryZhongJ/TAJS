@@ -16,16 +16,16 @@
 
 package dk.brics.tajs.lattice;
 
-import dk.brics.tajs.lattice.PKey.SymbolPKey;
+import dk.brics.tajs.lattice.PropertyKey.SymbolPKey;
 import dk.brics.tajs.util.AnalysisException;
 
 /**
- * An object property.
+ * An object's property.
  * Immutable.
  */
 public class Property {
 
-    private PKey propertyname;
+    private PropertyKey propertyname;
 
     private int hashcode;
 
@@ -53,7 +53,7 @@ public class Property {
 
     private static Property theInternalScopeProperty =  new Property(Kind.INTERNAL_SCOPE, null);
 
-    private Property(Kind kind, PKey propertyname) {
+    private Property(Kind kind, PropertyKey propertyname) {
         this.kind = kind;
         this.propertyname = propertyname;
         hashcode = kind.hashCode() * 5 + (propertyname != null ? propertyname.hashCode() * 31 : 0);
@@ -62,7 +62,7 @@ public class Property {
     /**
      * Constructs an ordinary property.
      */
-    public static Property makeOrdinaryProperty(PKey propertyname) {
+    public static Property makeOrdinaryProperty(PropertyKey propertyname) {
         return new Property(Kind.ORDINARY, propertyname);
     }
 
@@ -157,7 +157,7 @@ public class Property {
     /**
      * Returns the property name (for ordinary properties).
      */
-    public PKey getPropertyName() {
+    public PropertyKey getPropertyName() {
         if (kind != Kind.ORDINARY) {
             throw new AnalysisException("Call to getPropertyName on non-ORDINARY property");
         }

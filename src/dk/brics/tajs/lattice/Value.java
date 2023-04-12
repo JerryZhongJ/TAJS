@@ -40,7 +40,7 @@ import static dk.brics.tajs.util.Collections.singleton;
  * Abstract value.
  * Value objects are immutable.
  */
-public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable {
+public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepImmutable {
 
     private final static int BOOL_TRUE = 0x00000001; // true
 
@@ -1334,10 +1334,10 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
             return false;
         Set<String> new_excluded_strings = excluded_strings == null ? newSet() : newSet(excluded_strings);
         // remove the strings from this.excluded_strings that are matched by v
-        new_excluded_strings.removeIf(v::isMaybeStr);
+        new_excluded_strings.removeIf(v::isMaybeExactStr);
         // add the strings from v.excluded_strings that are not matched by this
         if (v.excluded_strings != null)
-            new_excluded_strings.addAll(v.excluded_strings.stream().filter(s -> !isMaybeStr(s)).collect(Collectors.toSet()));
+            new_excluded_strings.addAll(v.excluded_strings.stream().filter(s -> !isMaybeExactStr(s)).collect(Collectors.toSet()));
         // fix representation if empty
         if (new_excluded_strings.isEmpty())
             new_excluded_strings = null;
@@ -1491,7 +1491,7 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
                 b.append("false");
                 any = true;
             }
-            if (isMaybeAnyNum()) {
+            if (isMaybeNum()) {
                 if (any)
                     b.append('|');
                 b.append("Num");
@@ -2179,7 +2179,7 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
     public Value restrictToFalsy() {
         checkNotPolymorphicOrUnknown();
         Value r = new Value(this);
-        if (isMaybeStr(""))
+        if (isMaybeExactStr(""))
             r.str = "";
         else
             r.str = null;
@@ -2206,7 +2206,7 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
     /* the Num facet */
 
     @Override
-    public boolean isMaybeAnyNum() {
+    public boolean isMaybeNum() {
         checkNotPolymorphicOrUnknown();
         return (flags & NUM) == NUM;
     }
@@ -2260,7 +2260,7 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
     }
 
     @Override
-    public boolean isMaybeNum(double num) {
+    public boolean isMaybeExactNum(double num) {
         checkNotPolymorphicOrUnknown();
         if (this.num != null) {
             return this.num == num;
@@ -2320,7 +2320,7 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
     @Override
     public Value joinAnyNum() {
         checkNotPolymorphicOrUnknown();
-        if (isMaybeAnyNum())
+        if (isMaybeNum())
             return this;
         Value r = new Value(this);
         r.num = null;
@@ -3099,7 +3099,7 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
     }
 
     @Override
-    public boolean isMaybeStr(String s) {
+    public boolean isMaybeExactStr(String s) {
         checkNotPolymorphicOrUnknown();
         if (excluded_strings != null && excluded_strings.contains(s))
             return false;
@@ -3400,7 +3400,7 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
         checkNotPolymorphicOrUnknown();
         if (Options.get().isNoStringSets() || isNotStr())
             return this;
-        strings = strings.stream().filter(this::isMaybeStr).collect(Collectors.toSet());
+        strings = strings.stream().filter(this::isMaybeExactStr).collect(Collectors.toSet());
         if (strings.isEmpty())
             return this;
         Value v = new Value(this);
@@ -3485,9 +3485,9 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
     /**
      * Constructs a new value representing the given strings and symbols.
      */
-    public static Value makeStringsAndSymbols(Collection<PKey> properties) {
-        Value rSymb = new Value(join(properties.stream().map(PKey::toValue).collect(Collectors.toSet())));
-        Value rStr = makeStrings(properties.stream().filter(x -> x instanceof PKey.StringPKey).map(x -> ((PKey.StringPKey) x).getStr()).collect(Collectors.toList()));
+    public static Value makeStringsAndSymbols(Collection<PropertyKey> properties) {
+        Value rSymb = new Value(join(properties.stream().map(PropertyKey::toValue).collect(Collectors.toSet())));
+        Value rStr = makeStrings(properties.stream().filter(x -> x instanceof PropertyKey.StringPropertyKey).map(x -> ((PropertyKey.StringPropertyKey) x).getStr()).collect(Collectors.toList()));
         return rSymb.join(rStr);
     }
 
@@ -4251,10 +4251,10 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
     public boolean isMaybeSameNumber(Value v) {
         checkNotPolymorphicOrUnknown();
         if (num != null) {
-            return v.isMaybeNum(num);
+            return v.isMaybeExactNum(num);
         }
         if (v.num != null) {
-            return isMaybeNum(v.num);
+            return isMaybeExactNum(v.num);
         }
         return (flags & v.flags & NUM) != 0;
     }
@@ -4263,10 +4263,10 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
     public boolean isMaybeSameNumberWhenNegated(Value v) {
         checkNotPolymorphicOrUnknown();
         if (num != null) {
-            return v.isMaybeNum(-num);
+            return v.isMaybeExactNum(-num);
         }
         if (v.num != null) {
-            return isMaybeNum(-v.num);
+            return isMaybeExactNum(-v.num);
         }
         boolean maybePos = (flags & NUM_UINT_POS) != 0;
         boolean maybeNeg = (flags & NUM_OTHER) != 0;
@@ -4308,11 +4308,11 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
             r.flags &= ~(UNDEF | ABSENT); // if v is neither undefined nor absent, then the same holds for the result
         // handle numbers
         if (isMaybeSingleNum()) {
-            if (!v.isMaybeNum(num))
+            if (!v.isMaybeExactNum(num))
                 r.num = null;
         } else { // this is fuzzy number (or not a number)
             if (v.isMaybeSingleNum()) {
-                if (isMaybeNum(v.num))
+                if (isMaybeExactNum(v.num))
                     r.num = v.num;
                 r.flags &= ~NUM;
             } else {
@@ -4322,11 +4322,11 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
         // handle strings
         if (isMaybeSingleStr()) {
             // this is single string
-            if (!v.isMaybeStr(str))
+            if (!v.isMaybeExactStr(str))
                 r.str = null;
         } else if (v.isMaybeSingleStr()) {
             // this is fuzzy string (or not a string), v is single string
-            if (isMaybeStr(v.str))
+            if (isMaybeExactStr(v.str))
                 r.str = v.str;
             else
                 r.str = null;
@@ -4342,12 +4342,12 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
                         r.included_strings.retainAll(v.included_strings);
                     } else {
                         // this is included_strings, v isn't
-                        r.included_strings.removeIf(s -> !v.isMaybeStr(s));
+                        r.included_strings.removeIf(s -> !v.isMaybeExactStr(s));
                     }
                 } else {
                     // this is not included_strings, but v is
                     r.included_strings = newSet(v.included_strings);
-                    r.included_strings.removeIf(s -> !isMaybeStr(s));
+                    r.included_strings.removeIf(s -> !isMaybeExactStr(s));
                 }
                 r.excluded_strings = null;
                 r.str = null;
@@ -4503,12 +4503,12 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
                     r.included_strings.retainAll(v.included_strings);
                 } else {
                     // this is included_strings, v isn't
-                    r.included_strings.removeIf(s -> !v.isMaybeStr(s));
+                    r.included_strings.removeIf(s -> !v.isMaybeExactStr(s));
                 }
             } else {
                 // this is not included_strings, but v is
                 r.included_strings = newSet(v.included_strings);
-                r.included_strings.removeIf(s -> !isMaybeStr(s));
+                r.included_strings.removeIf(s -> !isMaybeExactStr(s));
             }
             r.excluded_strings = null;
         } else {
@@ -4518,7 +4518,7 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
             boolean vIsNotNumber = v.isNotNum();
             boolean vIsNotString = v.isNotStr();
             boolean vIsNotZero = !v.isMaybeZero();
-            boolean vIsNotEmptyString = !v.isMaybeStr("");
+            boolean vIsNotEmptyString = !v.isMaybeExactStr("");
             boolean vIsNotNumericString;
             Double vNumericStringNumber = null;
             if (v.isMaybeSingleStr()) {
@@ -4575,11 +4575,11 @@ public class Value implements Undef, Null, Bool, Num, Str, PKeys, DeepImmutable 
                 r.removeIncludedAddExcludedString("0"); // could also exclude "0.0", "  -0 ", etc.
             }
             // remove non-zero number if v is definitely not that number or a string that is coerced to that number
-            if (r.num != null && r.num != 0 && !v.isMaybeNum(r.num) && vNumericStringNumber != null && vNumericStringNumber.doubleValue() != r.num.doubleValue()) {
+            if (r.num != null && r.num != 0 && !v.isMaybeExactNum(r.num) && vNumericStringNumber != null && vNumericStringNumber.doubleValue() != r.num.doubleValue()) {
                 r.num = null;
             }
             // remove non-empty string if v is definitely not that string or a number that is coerced to that string
-            if (isMaybeSingleStr() && !str.isEmpty() && !v.isMaybeStr(str) && (vIsNotNumber || thisIsNotNumericString)) {
+            if (isMaybeSingleStr() && !str.isEmpty() && !v.isMaybeExactStr(str) && (vIsNotNumber || thisIsNotNumericString)) {
                 r.str = null;
             }
         }

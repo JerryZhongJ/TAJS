@@ -223,7 +223,7 @@ public interface Str {
     /**
      * Checks whether the given string is matched by this value.
      */
-    boolean isMaybeStr(String s);
+    boolean isMaybeExactStr(String s);
 
 //    /**
 //     * Checks whether the given abstract string value is definitely different from this abstract string string.

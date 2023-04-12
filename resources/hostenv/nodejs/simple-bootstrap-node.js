@@ -4,6 +4,7 @@
 */
 
 (function () {
+    // load require machanism
     function loadRequire() {
         var simpleRequire = TAJS_load("simple-require.js", true, "module");
         var module = {
@@ -14,5 +15,7 @@
     }
 
     var require_with_parentFilename = loadRequire();
+
+    // require the analyzed file
     this.TAJS_global_exports = require_with_parentFilename(TAJS_getMain(), null);
 })();

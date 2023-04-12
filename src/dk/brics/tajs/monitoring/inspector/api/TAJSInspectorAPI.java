@@ -38,7 +38,7 @@ import dk.brics.tajs.flowgraph.BasicBlock;
 import dk.brics.tajs.flowgraph.SourceLocation;
 import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKey;
+import dk.brics.tajs.lattice.PropertyKey;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.UnknownValueResolver;
 import dk.brics.tajs.lattice.Value;
@@ -218,7 +218,7 @@ public class TAJSInspectorAPI implements InspectorAPI {
         metaProperties.put("<prototype>", prototype);
         metaProperties.put("<internal>", internal);
 
-        Map<PKey, Set<Value>> multiProperties = newMap();
+        Map<PropertyKey, Set<Value>> multiProperties = newMap();
         states.forEach(state ->
                 UnknownValueResolver.getProperties(label, state)
                         .keySet().forEach(k -> {

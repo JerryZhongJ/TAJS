@@ -31,7 +31,7 @@ import dk.brics.tajs.js2flowgraph.HTMLParser;
 import dk.brics.tajs.lattice.Context;
 import dk.brics.tajs.lattice.Obj;
 import dk.brics.tajs.lattice.ObjectLabel;
-import dk.brics.tajs.lattice.PKey;
+import dk.brics.tajs.lattice.PropertyKey;
 import dk.brics.tajs.lattice.ScopeChain;
 import dk.brics.tajs.lattice.State;
 import dk.brics.tajs.lattice.Value;
@@ -130,7 +130,7 @@ public class Main {
         ScopeChain.reset();
         NodeJSRequire.reset();
         PathAndURLUtils.reset();
-        PKey.StringPKey.reset();
+        PropertyKey.StringPropertyKey.reset();
         ObjectLabel.reset();
         InitialStateBuilder.reset();
         BlendedAnalysisOptions.reset();
@@ -163,6 +163,8 @@ public class Main {
     public static Analysis init(OptionValues options, IAnalysisMonitoring monitoring, SolverSynchronizer sync, Transfer transfer, ITypeTester<Context> ttr) throws AnalysisException {
         checkValidOptions(options);
         Options.set(options);
+
+        
         TAJSEnvironmentConfig.init();
 
         if (monitoring == null)
@@ -200,6 +202,7 @@ public class Main {
             }
 
             FlowGraphBuilder builder = FlowGraphBuilder.makeForMain(new SourceLocation.StaticLocationMaker(Lists.getLast(resolvedFiles)));
+            // build flow graph for host functions
             builder.addLoadersForHostFunctionSources(HostEnvSources.getAccordingToOptions());
             if (Options.get().isNodeJS()) {
                 NodeJSRequire.init();

@@ -17,7 +17,7 @@
 package dk.brics.tajs.lattice;
 
 import dk.brics.tajs.flowgraph.AbstractNode;
-import dk.brics.tajs.lattice.PKey.StringPKey;
+import dk.brics.tajs.lattice.PropertyKey.StringPropertyKey;
 import dk.brics.tajs.options.Options;
 import dk.brics.tajs.util.AnalysisException;
 
@@ -35,7 +35,7 @@ import static dk.brics.tajs.util.Collections.sortedEntries;
  */
 public final class Obj {
 
-    private Map<PKey, Value> properties;
+    private Map<PropertyKey, Value> properties;
 
     private boolean writable_properties; // for copy-on-write (for properties, not this object)
 
@@ -277,10 +277,10 @@ public final class Obj {
         Obj res = new Obj();
         res.writable = true;
         res.properties = newMap();
-        for (Entry<PKey, Value> me : properties.entrySet()) {
-            Set<PKey> renamed_key = me.getKey().rename(s);
+        for (Entry<PropertyKey, Value> me : properties.entrySet()) {
+            Set<PropertyKey> renamed_key = me.getKey().rename(s);
             Value renamed_value = me.getValue().rename(s);
-            for (PKey k : renamed_key) {
+            for (PropertyKey k : renamed_key) {
                 Value old_value = res.properties.get(k);
                 Value new_value;
                 if (old_value == null)
@@ -306,8 +306,8 @@ public final class Obj {
      */
     public void replaceNonModifiedParts(Obj other, Set<AbstractNode> maybePartitionNodes) {
         checkWritable();
-        Map<PKey, Value> newproperties = newMap();
-        for (Entry<PKey, Value> me : properties.entrySet()) {
+        Map<PropertyKey, Value> newproperties = newMap();
+        for (Entry<PropertyKey, Value> me : properties.entrySet()) {
             Value v = me.getValue();
             if (!v.isMaybeModified()) { // property is definitely not modified, so replace it
                 v = PartitionedValue.removePartitions(other.getProperty(me.getKey()), maybePartitionNodes);
@@ -317,7 +317,7 @@ public final class Obj {
         boolean default_numeric_property_maybe_modified = default_numeric_property.isMaybeModified();
         boolean default_other_property_maybe_modified = default_other_property.isMaybeModified();
         if (!default_numeric_property_maybe_modified || !default_other_property_maybe_modified)
-            for (Entry<PKey, Value> me : other.properties.entrySet())
+            for (Entry<PropertyKey, Value> me : other.properties.entrySet())
                 if (!newproperties.containsKey(me.getKey())
                         && (me.getKey().isNumeric() ? !default_numeric_property_maybe_modified : !default_other_property_maybe_modified))
                     newproperties.put(me.getKey(), PartitionedValue.removePartitions(me.getValue(), maybePartitionNodes));
@@ -384,8 +384,8 @@ public final class Obj {
      */
     public void clearModified() {
         checkWritable();
-        Map<PKey, Value> new_properties = newMap();
-        for (Entry<PKey, Value> me : properties.entrySet())
+        Map<PropertyKey, Value> new_properties = newMap();
+        for (Entry<PropertyKey, Value> me : properties.entrySet())
             new_properties.put(me.getKey(), me.getValue().restrictToNotModified());
         properties = new_properties;
         writable_properties = true;
@@ -399,7 +399,7 @@ public final class Obj {
      * Returns the value of the given property, considering defaults if necessary.
      * Never returns null, may return 'unknown'.
      */
-    public Value getProperty(PKey propertyname) {
+    public Value getProperty(PropertyKey propertyname) {
         Value v = properties.get(propertyname);
         if (v == null)
             if (propertyname.isNumeric())
@@ -412,7 +412,7 @@ public final class Obj {
     /**
      * Sets the given property.
      */
-    public void setProperty(PKey propertyname, Value v) {
+    public void setProperty(PropertyKey propertyname, Value v) {
         checkWritable();
         makeWritableProperties();
         properties.put(propertyname, v);
@@ -421,7 +421,7 @@ public final class Obj {
     /**
      * Returns all property names, excluding the defaults and internal properties.
      */
-    public Set<PKey> getPropertyNames() {
+    public Set<PropertyKey> getPropertyNames() {
         return properties.keySet();
     }
 
@@ -429,14 +429,14 @@ public final class Obj {
      * Returns all properties, excluding the defaults and internal properties.
      * The returned map is *only* for reading.
      */
-    public Map<PKey, Value> getProperties() {
+    public Map<PropertyKey, Value> getProperties() {
         return properties;
     }
 
     /**
      * Sets the property map.
      */
-    public void setProperties(Map<PKey, Value> properties) {
+    public void setProperties(Map<PropertyKey, Value> properties) {
         checkWritable();
         this.properties = properties;
         writable_properties = true;
@@ -562,8 +562,8 @@ public final class Obj {
      */
     public void replaceObjectLabel(ObjectLabel oldlabel, ObjectLabel newlabel, Map<ScopeChain, ScopeChain> cache) {
         checkWritable();
-        Map<PKey, Value> newproperties = newMap();
-        for (Entry<PKey, Value> me : properties.entrySet())
+        Map<PropertyKey, Value> newproperties = newMap();
+        for (Entry<PropertyKey, Value> me : properties.entrySet())
             newproperties.put(me.getKey().replaceObjectLabel(oldlabel, newlabel), me.getValue().replaceObjectLabel(oldlabel, newlabel));
         properties = newproperties;
         scope = ScopeChain.replaceObjectLabel(scope, oldlabel, newlabel, cache);
@@ -601,7 +601,7 @@ public final class Obj {
      * and that no explicit property has been moved to default_numeric_property or default_other_property.
      */
     public void diff(Obj old, StringBuilder b) {
-        for (Entry<PKey, Value> me : sortedEntries(properties, new PKey.Comparator())) {
+        for (Entry<PropertyKey, Value> me : sortedEntries(properties, new PropertyKey.Comparator())) {
             Value v = old.properties.get(me.getKey());
             if (v == null) {
                 b.append("\n        new property: ").append(me.getKey());
@@ -670,11 +670,11 @@ public final class Obj {
             any = true;
             b.append("<none>");
         }
-        for (Entry<PKey, Value> me : sortedEntries(properties, new PKey.Comparator())) {
+        for (Entry<PropertyKey, Value> me : sortedEntries(properties, new PropertyKey.Comparator())) {
             Value v = me.getValue();
             if (v == (me.getKey().isNumeric() ? default_numeric_property : default_other_property))
                 continue;
-            if (me.getKey().equals(StringPKey.__PROTO__))
+            if (me.getKey().equals(StringPropertyKey.__PROTO__))
                 continue;
             if (any)
                 b.append(",");
@@ -731,9 +731,9 @@ public final class Obj {
      */
     public String printModified() {
         StringBuilder b = new StringBuilder();
-        for (Entry<PKey, Value> me : sortedEntries(properties, new PKey.Comparator())) {
+        for (Entry<PropertyKey, Value> me : sortedEntries(properties, new PropertyKey.Comparator())) {
             Value v = me.getValue();
-            if (me.getKey().equals(StringPKey.__PROTO__)) {
+            if (me.getKey().equals(StringPropertyKey.__PROTO__)) {
                 continue;
             }
             if (v.isMaybeModified() && v.isMaybePresentOrUnknown())
@@ -776,7 +776,7 @@ public final class Obj {
                 internal_value.containsObjectLabel(objlabel)) {
             return true;
         }
-        for (Map.Entry<PKey, Value> me : properties.entrySet())
+        for (Map.Entry<PropertyKey, Value> me : properties.entrySet())
             if (me.getKey().containsObjectLabel(objlabel) || me.getValue().containsObjectLabel(objlabel))
                 return true;
         return ScopeChain.containsObjectLabels(scope, objlabel);
@@ -836,7 +836,7 @@ public final class Obj {
         checkWritable();
         makeWritableProperties();
         // materialize properties before changing the default properties
-        for (PKey propertyname : obj.properties.keySet()) {
+        for (PropertyKey propertyname : obj.properties.keySet()) {
             properties.put(propertyname, getProperty(propertyname));
         }
         // reduce those properties that are unknown or polymorphic in obj
@@ -849,9 +849,9 @@ public final class Obj {
         internal_prototype = UnknownValueResolver.localize(internal_prototype, obj.internal_prototype, s,
                 ObjectProperty.makeInternalPrototype(objlabel));
         UnknownValueResolver.localizeScopeChain(objlabel, this, obj, s);
-        Map<PKey, Value> new_properties = newMap();
-        for (Entry<PKey, Value> me : properties.entrySet()) { // obj is writable, so materializations from defaults will appear here
-            PKey propertyname = me.getKey();
+        Map<PropertyKey, Value> new_properties = newMap();
+        for (Entry<PropertyKey, Value> me : properties.entrySet()) { // obj is writable, so materializations from defaults will appear here
+            PropertyKey propertyname = me.getKey();
             Value v = me.getValue();
             Value obj_v = obj.getProperty(propertyname);
             new_properties.put(propertyname, UnknownValueResolver.localize(v, obj_v, s,
@@ -894,7 +894,7 @@ public final class Obj {
         checkWritable();
         makeWritableProperties();
         for (String propertyname : propertynames) {
-            PKey p = PKey.StringPKey.make(propertyname);
+            PropertyKey p = PropertyKey.StringPropertyKey.make(propertyname);
             properties.put(p, getProperty(p));
         }
     }
