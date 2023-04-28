@@ -729,7 +729,10 @@ public class NodeTransfer implements NodeVisitor {
         Partitioning.applyTypePartitioning(n, c);
         if (n.getFunctionRegister() != AbstractNode.NO_VALUE) { // old style call (where the function is given as a variable read)
             State state = c.getState();
+
+            // read function
             Value originalFunctionValue = state.readRegister(n.getFunctionRegister());
+            
             Collection<Value> refinedFunctionValues = Options.get().isBlendedAnalysisEnabled() ?
                     c.getAnalysis().getBlendedAnalysis().getValue(originalFunctionValue, null, null, n, state) :
                     singleton(originalFunctionValue);
@@ -738,10 +741,13 @@ public class NodeTransfer implements NodeVisitor {
                 return;
             }
             Value functionValue = UnknownValueResolver.getRealValue(Value.join(refinedFunctionValues), state);
+
+
             FunctionCalls.callFunction(new OrdinaryCallInfo(n, c, functionValue.getFunctionPartitions(), functionValue.getFunctionTypeSignatures()) {
 
                 @Override
                 public Value getFunctionValue() {
+                    // literal constructor means built-in constructor
                     if (n.getLiteralConstructorKind() != null) {
                         // these literal invocations can not be spurious in ES5
                         switch (n.getLiteralConstructorKind()) {
