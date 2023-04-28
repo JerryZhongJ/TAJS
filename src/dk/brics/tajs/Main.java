@@ -205,7 +205,7 @@ public class Main {
             // build flow graph for host functions
             builder.addLoadersForHostFunctionSources(HostEnvSources.getAccordingToOptions());
             if (Options.get().isNodeJS()) {
-                NodeJSRequire.init();
+                NodeJSRequire.init(Options.get().getCSummaryPath());
                 if (resolvedFiles.size() != 1 || htmlFile != null) {
                     throw new AnalysisException("A single JavaScript file is expected for NodeJS analysis");
                 }

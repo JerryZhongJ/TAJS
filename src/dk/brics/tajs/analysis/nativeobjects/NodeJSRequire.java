@@ -29,8 +29,11 @@ public class NodeJSRequire {
 
     private Map<Pair<String, URL>, URL> resolveCache;
 
-    public NodeJSRequire() {
+    private String c_summary_path;
+
+    private NodeJSRequire(String c_summary_path) {
         this.resolveCache = newMap();
+        this.c_summary_path = c_summary_path;
     }
 
     public static NodeJSRequire get() {
@@ -44,11 +47,11 @@ public class NodeJSRequire {
         instance = null;
     }
 
-    public static void init() {
+    public static void init(String c_summary_path) {
         if (instance != null) {
             throw new AnalysisException("NodeJSRequire is already initialized!");
         }
-        instance = new NodeJSRequire();
+        instance = new NodeJSRequire(c_summary_path);
     }
 
     /**
@@ -78,6 +81,10 @@ public class NodeJSRequire {
                 resolved = HostEnvSources.resolve(Paths.get("nodejs/modules").resolve(arg + ".js").toString());
             } catch (AnalysisException e) {
                 // ignore
+            }
+
+            if (resolved == null) {
+                resolved = PathAndURLUtils.toURL(Paths.get(c_summary_path, arg + ".js"));
             }
         }
 

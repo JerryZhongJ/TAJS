@@ -336,8 +336,12 @@ public final class ObjectLabel implements DeepImmutable {
             return false;
         if (!heapContext.equals(x.heapContext))
             return false;
+
+        if(function != null && x.function != null) {
+            return function.equals(x.function);
+        }
         return (hostobject == null || hostobject.equals(x.hostobject)) &&
-                function == x.function && node == x.node &&
+                node == x.node &&
                 singleton == x.singleton && kind == x.kind;
     }
 

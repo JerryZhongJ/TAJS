@@ -25,6 +25,7 @@ import dk.brics.tajs.analysis.Solver;
 import dk.brics.tajs.analysis.dom.DOMEvents;
 import dk.brics.tajs.flowgraph.AbstractNode;
 import dk.brics.tajs.flowgraph.BasicBlock;
+import dk.brics.tajs.flowgraph.CFunction;
 import dk.brics.tajs.flowgraph.Function;
 import dk.brics.tajs.flowgraph.SourceLocation;
 import dk.brics.tajs.flowgraph.jsnodes.CallNode;
@@ -262,6 +263,7 @@ public class UserFunctionCalls {
                 Value renamed = v.rename(extra_renamings);
                 pv.writeProperty(singleton(argobj), Value.makeAnyStrUInt(), renamed); // the first arguments will be overwritten below with something more precise
             }
+
             // write argument values to the arguments object and the named parameters
             final int numberOfUnknownArgumentsToKeepDisjoint = Options.Constants.NUMBER_OF_UNKNOWN_ARGUMENTS_TO_KEEP_DISJOINT; // number of parameters to keep separate, if the actual number is unknown
             for (int i = 0; i < f.getParameterNames().size() || i < (call.isUnknownNumberOfArgs() ? numberOfUnknownArgumentsToKeepDisjoint : call.getNumberOfArgs()); i++) {
@@ -274,6 +276,16 @@ public class UserFunctionCalls {
                     if (renamed.isMaybeAbsent())
                         renamed = renamed.restrictToNotAbsent().joinUndef(); // convert absent to undefined
                     pv.declareAndWriteVariable(f.getParameterNames().get(i), renamed, true); // 10.1.3
+                }
+
+                // TODO: Here to check type
+                if (f instanceof CFunction && c.isScanning()) {
+                    CFunction cf = (CFunction) f;
+                    if (!cf.checkType(i, renamed)) {
+                        c.getMonitoring().addMessage(c.getNode(),
+                                Severity.HIGH,
+                                String.format("parameter %s of %s should be of type %s.", cf.getParameterNames().get(i), cf.getName(), cf.types[i]));
+                    }
                 }
             }
             // FIXME: properties of 'arguments' should be shared with the formal parameters (see 10.1.8 item 4) - easy solution that does not require Reference types? - github #21

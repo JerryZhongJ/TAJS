@@ -359,7 +359,7 @@ public class PropVarOperations {
         if (propertystr.isMaybeFuzzyStr()) {
             result = result.joinAbsent();
         }
-        if (propertystr.isMaybeStr("length")) {
+        if (propertystr.isMaybeExactStr("length")) {
             if (str.isMaybeSingleStr()) {
                 result = result.joinNum(str.getStr().length());
             } else {
@@ -816,7 +816,7 @@ public class PropVarOperations {
         if (objprop.getObjectLabel().getKind() != ObjectLabel.Kind.ARRAY)
             return false;
         Str propertystr = objprop.getProperty().toValue();
-        boolean maybe_length = propertystr.isMaybeStr("length");
+        boolean maybe_length = propertystr.isMaybeExactStr("length");
         boolean maybe_index = propertystr.isMaybeStrSomeUInt();
         if (maybe_length || maybe_index) {
             Double old_length = UnknownValueResolver.getRealValue(readPropertyValue(Collections.singleton(objprop.getObjectLabel()), "length"), c.getState()).getNum();

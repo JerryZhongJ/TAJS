@@ -69,7 +69,8 @@ public enum TAJSFunctionName {
     TAJS_NODE_PARENT_DIR("parentDir"), // used only in simple-require.js
     TAJS_NODE_UNURL("unURL"), // used only in simple-require.js
 
-    TAJS_CHECKCTYPE("checkCType");
+    TAJS_CHECKCTYPE("checkCType"),
+    TAJS_CFUNCTION("CFunction");
 
     private String string;
 

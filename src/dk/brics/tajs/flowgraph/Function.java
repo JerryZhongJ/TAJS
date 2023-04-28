@@ -132,6 +132,24 @@ public class Function implements Serializable {
         this.strict = strict;
     }
 
+    // JSC: create a function copy
+    public Function(Function f) {
+        this.index = f.index;
+        this.blocks = f.blocks;
+        this.location = f.location;
+        this.entry = f.entry;
+        this.ordinary_exit = f.ordinary_exit;
+        this.exceptional_exit = f.exceptional_exit;
+        this.name = f.name;
+        this.outer_function = f.outer_function;
+        this.parameter_names = f.parameter_names;
+        this.variable_names = f.variable_names;
+        this.max_register = f.max_register;
+        this.node = f.node;
+        this.source = f.source;
+        this.strict = f.strict;
+    }
+
     /**
      * @see #Function(String, List, Function, boolean, SourceLocation, String)
      */
@@ -470,5 +488,10 @@ public class Function implements Serializable {
      */
     public boolean isStrict() {
         return strict;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return this == o;
     }
 }

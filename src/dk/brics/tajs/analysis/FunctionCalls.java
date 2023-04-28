@@ -419,6 +419,7 @@ public class FunctionCalls {
         Value funval = call.getFunctionValue();
         funval = UnknownValueResolver.getRealValue(funval, caller_state);
         boolean maybe_non_function = funval.isMaybePrimitiveOrSymbol();
+        
         for (ObjectLabel objlabel : funval.getObjectLabels()) {
             if (objlabel.getKind() == Kind.FUNCTION) {
                 if (objlabel.isHostObject()) { // host function

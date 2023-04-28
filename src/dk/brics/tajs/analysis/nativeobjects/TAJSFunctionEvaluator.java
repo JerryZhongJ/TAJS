@@ -30,11 +30,13 @@ import dk.brics.tajs.analysis.dom.event.KeyboardEvent;
 import dk.brics.tajs.analysis.dom.event.MouseEvent;
 import dk.brics.tajs.analysis.dom.event.UIEvent;
 import dk.brics.tajs.analysis.dom.event.WheelEvent;
+import dk.brics.tajs.analysis.js.UserFunctionCalls;
 import dk.brics.tajs.analysis.nativeobjects.concrete.TAJSConcreteSemantics;
 import dk.brics.tajs.analysis.uneval.NormalForm;
 import dk.brics.tajs.analysis.uneval.UnevalTools;
 import dk.brics.tajs.blendedanalysis.BlendedAnalysisOptions;
 import dk.brics.tajs.flowgraph.AbstractNode;
+import dk.brics.tajs.flowgraph.CFunction;
 import dk.brics.tajs.flowgraph.Function;
 import dk.brics.tajs.flowgraph.SourceLocation;
 import dk.brics.tajs.flowgraph.TAJSFunctionName;
@@ -110,6 +112,7 @@ import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_NODE_REQUIRE_RESOLVE
 import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_NODE_UNURL;
 import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_NOT_IMPLEMENTED;
 import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_CHECKCTYPE;
+import static dk.brics.tajs.flowgraph.TAJSFunctionName.TAJS_CFUNCTION;
 import static dk.brics.tajs.util.Collections.newList;
 import static dk.brics.tajs.util.Collections.newMap;
 import static dk.brics.tajs.util.Collections.newSet;
@@ -715,9 +718,46 @@ public class TAJSFunctionEvaluator {
                     if (ctype.isMaybeFuzzyStr() || ctype.isNotStr()) {
                         throw new AnalysisException("Only constant-string TAJS_checkCType supported: " + ctype);
                     }
-                    CTypeChecker.check(arg, ctype.getStr());
+                    if (!CTypeChecker.check(arg, ctype.getStr())) {
+                        solver.getMonitoring().addMessage(solver.getNode(), Severity.HIGH, String.format("arguments is probably not in type %s.", ctype));
+                    }
             }
         );
+
+        register(implementations, TAJS_CFUNCTION,
+                "Value function, String ... types",
+                "CFunction",
+        "Wrap a javascript function with c type restriction.",
+                (call, state, pv, solver) -> {
+                    
+                    if (solver.isScanning())
+                        return Value.makeNone();
+
+                    Value funcVal = FunctionCalls.readParameter(call, state, 0);
+                    String types[] = new String[call.getNumberOfArgs() - 1];
+                    for (int i = 1; i < call.getNumberOfArgs(); i++) {
+                        Value ctype = FunctionCalls.readParameter(call, state, i);
+                        if (!ctype.isMaybeSingleStr()) {
+                            throw new AnalysisException("Only constant-string parameter-names for TAJS_CFunction supported: " + ctype);
+                        }
+                        types[i - 1] = ctype.getStr();
+                    }
+                    Set<ObjectLabel> objLabels = newSet();
+                    for(ObjectLabel objLabel: funcVal.getObjectLabels()) {
+                        if (objLabel.getKind() != Kind.FUNCTION) {
+                            continue;
+                        }
+                        Function f = objLabel.getFunction();
+                        CFunction cf = new CFunction(f, types);
+                        ObjectLabel cfuncLabel = UserFunctionCalls.instantiateFunction(cf, solver.getState().readObjectScope(objLabel), solver.getNode(), solver.getState(), solver);
+                        objLabels.add(cfuncLabel);
+                    }
+                   
+                    return Value.makeObject(objLabels);
+
+            }
+        );
+
 
 
         Set<TAJSFunctionName> missingRegistrations = newSet(Arrays.asList(TAJSFunctionName.values()));
