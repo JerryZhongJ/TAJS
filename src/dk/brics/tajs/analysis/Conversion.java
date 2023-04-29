@@ -519,6 +519,10 @@ public class Conversion {
                 r = r.joinNumInf();
             if (num.isMaybeNumUIntPos())
                 r = r.join(Value.makeAnyNumUIntPos());
+            if (num.isMaybeNumIntNegative())
+                r = r.join(Value.makeAnyNumNegative());
+            if(num.isMaybeNumInt())
+                r = r.join(Value.makeAnyNumInt());
             if (num.isMaybeZero())
                 r = r.joinNum(0);
             if (num.isMaybeNumOther())

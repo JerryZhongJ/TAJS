@@ -112,7 +112,10 @@ public class Operators {
         }
         Value result = Value.makeNone();
         if (nm.isMaybeNumUIntPos()) {
-            result = result.joinAnyNumOther();
+            result = result.joinAnyNumIntNegative();
+        }
+        if (nm.isMaybeNumIntNegative()) {
+            result = result.joinAnyNumUIntPos();
         }
         if (nm.isMaybeNumOther()) {
             result = result.joinAnyNumUInt().joinAnyNumOther();
@@ -490,7 +493,10 @@ public class Operators {
      * 11.8.1 <code>&lt;</code>
      */
     public static Value lt(Value v1, Value v2, Solver.SolverInterface c) {
-        if (v1.isMaybeSingleNum() && v1.getNum().equals(0.0) && !v1.isMaybeOtherThanNum() && v2.isMaybeNumUIntPos() && !v2.isMaybeZero() && !v2.isMaybeOtherThanNumUInt()) {
+        if (!v1.isMaybeOtherThanNum() &&    // v1 is a num
+                v1.isMaybeSingleNum() && v1.getNum().equals(0.0) &&
+                !v2.isMaybeOtherThanNumUInt() &&
+        v2.isMaybeNumUIntPos() && !v2.isMaybeZero() ) {
             // 0 is less than UIntPos
             return Value.makeBool(true);
         }

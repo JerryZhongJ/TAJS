@@ -62,9 +62,9 @@ public class CFunction extends Function{
     public boolean checkType(int index, Value arg) {
         switch (types[index]) {
         case INT:
-            
+            return !arg.isMaybeOtherThanNumInt() && (arg.isMaybeNumInt() || arg.isMaybeSingleNumInt());
         case UINT:
-            // TODO
+            return !arg.isMaybeOtherThanNumUInt() && (arg.isMaybeNumUInt() || arg.isMaybeSingleNumUInt());
         case DOUBLE:
             return !arg.isMaybeOtherThanNum() && (arg.isMaybeNum() || arg.isMaybeSingleNum());
         case STRING:

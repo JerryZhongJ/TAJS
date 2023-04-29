@@ -70,7 +70,7 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
 
     private final static int NUM_UINT_POS = 0x00004000; // UInt32 numbers (not zero)
 
-    private final static int NUM_OTHER = 0x00008000; // numbers that are not UInt32, not NaN, and not +/-Infinity
+    private final static int NUM_OTHER = 0x00008000; // numbers that are not Int32, not NaN, and not +/-Infinity
 
     private final static int ATTR_DONTENUM = 0x00010000; // [[DontEnum]] property
 
@@ -98,7 +98,11 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
 
     private final static int NUM_ZERO = 0x40000000; // zero (positive or negative)
 
+    private final static int NUM_INT_NEGATIVE = 0x80000000; // negative int
+
     private final static int NUM_UINT = NUM_UINT_POS | NUM_ZERO; // UInt32 numbers
+
+    private final static int NUM_INT = NUM_UINT | NUM_INT_NEGATIVE; // Int32 numbers
 
     private final static int BOOL = BOOL_TRUE | BOOL_FALSE;
 
@@ -155,6 +159,10 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
     private static Value theNumAny;
 
     private static Value theNumUInt;
+
+    private static Value theNumInt;
+
+    private static Value theNumIntNegative;
 
     private static Value theNumUIntPos;
 
@@ -298,6 +306,8 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
         theJSONStr = reallyMakeJSONStr();
         theNumAny = reallyMakeAnyNum();
         theNumUInt = reallyMakeAnyUInt();
+        theNumIntNegative = reallyMakeAnyIntNegative();
+        theNumInt = reallyMakeAnyInt();
         theNumUIntPos = reallyMakeAnyUIntPos();
         theNumNotNaNInf = reallyMakeAnyNumNotNaNInf();
         theNumOther = reallyMakeAnyNumOther();
@@ -2229,6 +2239,11 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
         return num != null && isUInt32(num);
     }
 
+    public boolean isMaybeSingleNumInt() {
+        checkNotPolymorphicOrUnknown();
+        return num != null && isInt32(num);
+    }
+
     @Override
     public boolean isMaybeFuzzyNum() {
         checkNotPolymorphicOrUnknown();
@@ -2287,6 +2302,11 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
         return (flags & NUM_UINT) != 0;
     }
 
+    public boolean isMaybeNumInt() {
+        checkNotPolymorphicOrUnknown();
+        return (flags & NUM_INT) != 0;
+    }
+
     @Override
     public boolean isMaybeNumOther() {
         checkNotPolymorphicOrUnknown();
@@ -2301,6 +2321,12 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
 
     @Override
     public boolean isMaybeOtherThanNumUInt() {
+        checkNotPolymorphicOrUnknown();
+        return ((flags & (UNDEF | NULL | BOOL | STR | NUM_INF | NUM_NAN | NUM_OTHER | NUM_INT_NEGATIVE)) != 0) || str != null || object_labels != null || getters != null || setters != null;
+    }
+
+   
+    public boolean isMaybeOtherThanNumInt() {
         checkNotPolymorphicOrUnknown();
         return ((flags & (UNDEF | NULL | BOOL | STR | NUM_INF | NUM_NAN | NUM_OTHER)) != 0) || str != null || object_labels != null || getters != null || setters != null;
     }
@@ -2335,6 +2361,30 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
             return this;
         Value r = new Value(this);
         r.flags |= NUM_UINT;
+        r.num = null;
+        if (num != null)
+            r.joinSingleNumberAsFuzzy(num);
+        return canonicalize(r);
+    }
+
+    public Value joinAnyNumUIntPos() {
+        checkNotPolymorphicOrUnknown();
+        if (isMaybeNumUIntPos() && isMaybeZero())
+            return this;
+        Value r = new Value(this);
+        r.flags |= NUM_UINT_POS;
+        r.num = null;
+        if (num != null)
+            r.joinSingleNumberAsFuzzy(num);
+        return canonicalize(r);
+    }
+
+    public Value joinAnyNumIntNegative() {
+        checkNotPolymorphicOrUnknown();
+        if (isMaybeNumIntNegative())
+            return this;
+        Value r = new Value(this);
+        r.flags |= NUM_INT_NEGATIVE;
         r.num = null;
         if (num != null)
             r.joinSingleNumberAsFuzzy(num);
@@ -2381,6 +2431,10 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
         return !Double.isNaN(v) && !Double.isInfinite(v) && v >= 0 && v <= Integer.MAX_VALUE * 2.0 + 1 && (v % 1) == 0;
     }
 
+    public static boolean isInt32(double v) {
+        return !Double.isNaN(v) && !Double.isInfinite(v) && v >= Integer.MIN_VALUE && v <= Integer.MAX_VALUE && (v % 1) == 0;
+    }
+
     /**
      * Joins the given single number as a fuzzy value.
      */
@@ -2393,6 +2447,8 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
             flags |= NUM_ZERO;
         else if (isUInt32(v))
             flags |= NUM_UINT_POS; // not zero due to the zero-check above
+        else if (isInt32(v))
+            flags |= NUM_INT_NEGATIVE;
         else
             flags |= NUM_OTHER;
     }
@@ -2440,6 +2496,18 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
         r.num = null;
         if (num != null)
             r.joinSingleNumberAsFuzzy(num);
+        return canonicalize(r);
+    }
+
+    private static Value reallyMakeAnyIntNegative() {
+        Value r = new Value();
+        r.flags = NUM_INT_NEGATIVE;
+        return canonicalize(r);
+    }
+
+    private static Value reallyMakeAnyInt() {
+        Value r = new Value();
+        r.flags = NUM_INT;
         return canonicalize(r);
     }
 
@@ -2517,6 +2585,14 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
      */
     public static Value makeAnyNum() {
         return theNumAny;
+    }
+
+    public static Value makeAnyNumInt() {
+        return theNumInt;
+    }
+
+    public static Value makeAnyNumNegative() {
+        return theNumIntNegative;
     }
 
     /**
@@ -4247,6 +4323,12 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
         return (flags & NUM_UINT_POS) != 0;
     }
 
+
+    public boolean isMaybeNumIntNegative() {
+        checkNotPolymorphicOrUnknown();
+        return (flags & NUM_INT_NEGATIVE) != 0;
+    }
+
     @Override
     public boolean isMaybeSameNumber(Value v) {
         checkNotPolymorphicOrUnknown();
@@ -4269,10 +4351,10 @@ public class Value implements Undef, Null, Bool, Num, Str, StringOrSymbol, DeepI
             return isMaybeExactNum(-v.num);
         }
         boolean maybePos = (flags & NUM_UINT_POS) != 0;
-        boolean maybeNeg = (flags & NUM_OTHER) != 0;
+        boolean maybeNeg = (flags & NUM_INT_NEGATIVE) != 0;
         boolean maybeZero = (flags & NUM_ZERO) != 0;
 
-        boolean v_maybeNeg = (v.flags & NUM_OTHER) != 0;
+        boolean v_maybeNeg = (v.flags & NUM_INT_NEGATIVE) != 0;
         boolean v_maybePos = (v.flags & NUM_UINT_POS) != 0;
         boolean v_maybeZero = (v.flags & NUM_ZERO) != 0;
 
