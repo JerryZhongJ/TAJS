@@ -28,6 +28,7 @@ import dk.brics.tajs.flowgraph.BasicBlock;
 import dk.brics.tajs.flowgraph.CFunction;
 import dk.brics.tajs.flowgraph.Function;
 import dk.brics.tajs.flowgraph.SourceLocation;
+import dk.brics.tajs.flowgraph.CFunction.TypeCheckFail;
 import dk.brics.tajs.flowgraph.jsnodes.CallNode;
 import dk.brics.tajs.flowgraph.jsnodes.DeclareFunctionNode;
 import dk.brics.tajs.flowgraph.jsnodes.EventDispatcherNode;
@@ -281,10 +282,14 @@ public class UserFunctionCalls {
                 // TODO: Here to check type
                 if (f instanceof CFunction && c.isScanning()) {
                     CFunction cf = (CFunction) f;
-                    if (!cf.checkType(i, renamed)) {
+                    
+                    try{
+                        cf.checkType(i, renamed);
+                    } 
+                    catch(TypeCheckFail e){
                         c.getMonitoring().addMessage(c.getNode(),
                                 Severity.HIGH,
-                                String.format("parameter %s of %s should be of type %s.", cf.getParameterNames().get(i), cf.getName(), cf.types[i]));
+                                e.getMessage());
                     }
                 }
             }

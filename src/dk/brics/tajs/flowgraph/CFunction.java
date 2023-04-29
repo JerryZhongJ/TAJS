@@ -30,6 +30,12 @@ public class CFunction extends Function{
         }
     };
 
+    public class TypeCheckFail extends Exception {
+        private TypeCheckFail(String message) {
+            super(message);
+        }
+    }
+
     public CType types[];
     private Function raw_function;
 
@@ -59,20 +65,32 @@ public class CFunction extends Function{
         }
     }
     
-    public boolean checkType(int index, Value arg) {
+    public void checkType(int index, Value arg) throws TypeCheckFail{
+        
         switch (types[index]) {
         case INT:
-            return !arg.isMaybeOtherThanNumInt() && (arg.isMaybeNumInt() || arg.isMaybeSingleNumInt());
+            if (arg.isMaybeOtherThanNumInt() || (!arg.isMaybeSingleNumInt() && !arg.isMaybeNumInt()))
+                throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be int.", getParameterNames().get(index), getName()));
+            break;
         case UINT:
-            return !arg.isMaybeOtherThanNumUInt() && (arg.isMaybeNumUInt() || arg.isMaybeSingleNumUInt());
+            if (arg.isMaybeOtherThanNumUInt() || (!arg.isMaybeSingleNumUInt() && !arg.isMaybeNumUInt()))
+                throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be unsigned int.", getParameterNames().get(index), getName()));
+            break;
         case DOUBLE:
-            return !arg.isMaybeOtherThanNum() && (arg.isMaybeNum() || arg.isMaybeSingleNum());
+            if (arg.isMaybeOtherThanNum() && (!arg.isMaybeSingleNum() && !arg.isMaybeNum()))
+                throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be double.", getParameterNames().get(index), getName()));
+            else if(arg.isMaybeSingleNumInt() || arg.isMaybeNumInt())
+                throw new TypeCheckFail(String.format("Warning: expected parameter '%s' of '%s' to be unsigned double, but an interger provided.", getParameterNames().get(index), getName()));
+            break;
         case STRING:
-            return !arg.isMaybeOtherThanStr() && (arg.isMaybeFuzzyStrOrSymbol() || arg.isMaybeSingleStrOrSymbol());
+            if (arg.isMaybeOtherThanStr() || (!arg.isMaybeSingleStrOrSymbol() && !arg.isMaybeFuzzyStrOrSymbol()))
+                throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be string.", getParameterNames().get(index), getName()));
+            break;
         case BOOLEAN:
-            return !arg.isMaybeOtherThanBool() && (arg.isMaybeAnyBool() || arg.isMaybeFalse() || arg.isMaybeTrue());
-        default:
-            throw new AnalysisException("Not implemented in CTypeChecker for " + types[index]);
+            if(arg.isMaybeOtherThanBool() ||( !arg.isMaybeTrue() && !arg.isMaybeFalse() && !arg.isMaybeAnyBool()))
+                throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be boolean.", getParameterNames().get(index), getName()));
+            break;
+        
         }
     }
 
