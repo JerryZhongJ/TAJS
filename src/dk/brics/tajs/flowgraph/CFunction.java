@@ -80,7 +80,7 @@ public class CFunction extends Function{
             if (arg.isMaybeOtherThanNum() && (!arg.isMaybeSingleNum() && !arg.isMaybeNum()))
                 throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be double.", getParameterNames().get(index), getName()));
             else if(arg.isMaybeSingleNumInt() || arg.isMaybeNumInt())
-                throw new TypeCheckFail(String.format("Warning: expected parameter '%s' of '%s' to be unsigned double, but an interger provided.", getParameterNames().get(index), getName()));
+                throw new TypeCheckFail(String.format("Warning: expected parameter '%s' of '%s' to be double, but an interger provided.", getParameterNames().get(index), getName()));
             break;
         case STRING:
             if (arg.isMaybeOtherThanStr() || (!arg.isMaybeSingleStrOrSymbol() && !arg.isMaybeFuzzyStrOrSymbol()))
