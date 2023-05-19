@@ -59,7 +59,7 @@ dependencies {
     // Main
     implementation group: 'com.google.guava', name: 'guava', version: '22.0' // put this before anything else to ensure this is the version used
     implementation group: 'args4j', name: 'args4j', version: '2.33'
-    implementation group: 'com.google.javascript', name: 'closure-compiler', version: 'v20170806'
+    implementation group: 'com.google.javascript', name: 'closure-compiler', version: 'v20180402'
     implementation group: 'commons-io', name: 'commons-io', version: '2.5'
     implementation group: 'net.htmlparser.jericho', name: 'jericho-html', version: '3.3'
     implementation group: 'log4j', name: 'log4j', version: '1.2.17'

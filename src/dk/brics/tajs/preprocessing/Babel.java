@@ -43,10 +43,20 @@ public class Babel {
 
     private static final Logger log = Logger.getLogger(Babel.class);
 
-    private static final String babelPlugins =
-            Stream.of("arrow-functions", "block-scoping", "classes", "shorthand-properties", "for-of",
-                      "template-literals", "parameters", "spread", "destructuring", "computed-properties")
-            .map(name -> "@babel/plugin-transform-" + name).collect(java.util.stream.Collectors.joining(","));
+    private static final String babelPlugins = "@babel/plugin-transform-arrow-functions," +
+            "@babel/plugin-transform-block-scoping," +
+            "@babel/plugin-transform-classes," +
+            "@babel/plugin-transform-shorthand-properties," +
+            "@babel/plugin-transform-for-of," +
+            "@babel/plugin-transform-template-literals," +
+            "@babel/plugin-transform-parameters," +
+            "@babel/plugin-transform-spread," +
+            "@babel/plugin-transform-destructuring," +
+            "@babel/plugin-transform-computed-properties," +
+            "@babel/plugin-transform-exponentiation-operator," +
+            "@babel/plugin-proposal-object-rest-spread";
+
+            
 
     private static final Pattern successPattern = Pattern.compile("Successfully compiled (\\d+) files? with Babel\\.");
 
