@@ -78,12 +78,12 @@
         require.cache = dummy_cache;
 
         // We treat the module as a function, and we can pass it some builtin objects
-        var f = TAJS_load(filename, false, "exports", "require", "module", "__filename", "__dirname");
+        var f = TAJS_load(filename, false, "exports", "require", "internalBinding", "module", "__filename", "__dirname");
 
         var dirname = TAJS_parentDir(filename);
 
         // Function.prototype.apply(thisArg, [arg1, arg2, ...])
-        f.apply(module.exports, [module.exports, require, module, TAJS_unURL(filename), TAJS_unURL(dirname)]);
+        f.apply(module.exports, [module.exports, require, require, module, TAJS_unURL(filename), TAJS_unURL(dirname)]);
 
         TAJS_moduleExportsFiltering(module.exports, filename);
         TAJS_assumeModuleType(filename, module);

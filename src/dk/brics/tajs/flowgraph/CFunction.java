@@ -1,5 +1,6 @@
 package dk.brics.tajs.flowgraph;
 
+import dk.brics.tajs.lattice.ObjectLabel;
 import dk.brics.tajs.lattice.Value;
 import dk.brics.tajs.util.AnalysisException;
 
@@ -9,7 +10,11 @@ public class CFunction extends Function{
         INT,
         DOUBLE,
         STRING,
-        BOOLEAN;
+        BOOLEAN,
+        OBJECT,
+        FUNCTION,
+        ARRAY,
+        UNKNOWN;
 
         @Override
         public String toString() {
@@ -24,6 +29,14 @@ public class CFunction extends Function{
                 return "string";
             case BOOLEAN:
                 return "boolean";
+            case OBJECT:
+                return "object";
+            case FUNCTION:
+                return "function";
+            case ARRAY:
+                return "array";
+            case UNKNOWN:
+                return "unknown";
             default:
                 throw new AnalysisException("Not implemented in CTypeChecker for " + this);
             }
@@ -59,8 +72,17 @@ public class CFunction extends Function{
             case "boolean":
                 this.types[i] = CType.BOOLEAN;
                 break;
+            case "object":
+                this.types[i] = CType.OBJECT;
+                break;
+            case "function":
+                this.types[i] = CType.FUNCTION;
+                break;
+            case "array":
+                this.types[i] = CType.ARRAY;
+                break;
             default:
-                throw new AnalysisException("C Type not supported: " + types[i]);
+                this.types[i] = CType.UNKNOWN;
             }
         }
     }
@@ -80,7 +102,7 @@ public class CFunction extends Function{
             if (arg.isMaybeOtherThanNum() && (!arg.isMaybeSingleNum() && !arg.isMaybeNum()))
                 throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be double.", getParameterNames().get(index), getName()));
             else if(arg.isMaybeSingleNumInt() || arg.isMaybeNumInt())
-                throw new TypeCheckFail(String.format("Warning: expected parameter '%s' of '%s' to be double, but an interger provided.", getParameterNames().get(index), getName()));
+                throw new TypeCheckFail(String.format("Warning: expected parameter '%s' of '%s' to be double, but an interger is provided.", getParameterNames().get(index), getName()));
             break;
         case STRING:
             if (arg.isMaybeOtherThanStr() || (!arg.isMaybeSingleStrOrSymbol() && !arg.isMaybeFuzzyStrOrSymbol()))
@@ -90,7 +112,26 @@ public class CFunction extends Function{
             if(arg.isMaybeOtherThanBool() ||( !arg.isMaybeTrue() && !arg.isMaybeFalse() && !arg.isMaybeAnyBool()))
                 throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be boolean.", getParameterNames().get(index), getName()));
             break;
-        
+        case OBJECT:
+            if(arg.isMaybePrimitive() || !arg.isMaybeObject())
+                throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be object.", getParameterNames().get(index), getName()));
+            break;
+        case FUNCTION:
+            if(arg.isMaybePrimitive() || !arg.isMaybeObject())
+                throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be function.", getParameterNames().get(index), getName()));
+            for(ObjectLabel l : arg.getObjectLabels())
+                if(!l.getKind().equals(ObjectLabel.Kind.FUNCTION))
+                    throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be function.", getParameterNames().get(index), getName()));
+            break;
+        case ARRAY:
+            if(arg.isMaybePrimitive() || !arg.isMaybeObject())
+                throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be array.", getParameterNames().get(index), getName()));
+            for(ObjectLabel l : arg.getObjectLabels())
+                if(!l.getKind().equals(ObjectLabel.Kind.ARRAY))
+                    throw new TypeCheckFail(String.format("Error: expected parameter '%s' of '%s' to be array.", getParameterNames().get(index), getName()));
+            break;
+        case UNKNOWN:
+            break;
         }
     }
 

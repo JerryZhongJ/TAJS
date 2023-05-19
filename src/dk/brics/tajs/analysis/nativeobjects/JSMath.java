@@ -110,8 +110,27 @@ public class JSMath {
                             throw new AnalysisException();
                     }
                     return Value.makeNum(res);
-                } else if (!num.isNotNum())
+                } else if (!num.isNotNum()){
+                    switch(nativeobject){
+                        case MATH_ABS:
+                            if(num.isMaybeOtherThanNumInt())
+                                return Value.makeAnyNum();
+                            else
+                                return Value.makeAnyNumUInt();
+                            
+                        case MATH_CEIL:
+                        case MATH_FLOOR:
+                        case MATH_ROUND:
+                            if(num.isMaybeOtherThanNumUInt())
+                            return Value.makeAnyNumInt();
+                        else
+                            return Value.makeAnyNumUInt();
+                            
+                  
+        
+                    }
                     return Value.makeAnyNum();
+                }
                 else
                     return Value.makeNone();
             }

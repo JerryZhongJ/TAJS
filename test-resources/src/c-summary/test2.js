@@ -1,3 +1,3 @@
-obj = require("addon");
-
-obj.method(1,"string",True)
+module.exports = {
+    msg: "succeed"
+}
